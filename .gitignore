@@ -1,0 +1,4 @@
+*.swp
+lexer
+parser
+*.dSYM*
