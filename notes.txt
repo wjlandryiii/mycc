@@ -1,0 +1,2 @@
+convert opt(...) to [ ... ]
+sed 's/opt(\([^\)]*\))/[ \1 ]/g' grammar.txt

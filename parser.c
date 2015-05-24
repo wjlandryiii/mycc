@@ -7,90 +7,66 @@
 
 struct token {
 	int type;
+	int value;
 };
 
 enum TOK_TYPES {
 	TOK_INVALID,
-	TOK_AUTO,
-	TOK_REGISTER,
-	TOK_STATIC,
-	TOK_EXTERN,
-	TOK_TYPEDEF,
-	TOK_VOID,
-	TOK_CHAR,
-	TOK_SHORT,
-	TOK_INT,
-	TOK_LONG,
-	TOK_FLOAT,
-	TOK_DOUBLE,
-	TOK_SIGNED,
-	TOK_UNSIGNED,
-	TOK_CONST,
-	TOK_VOLATILE,
-	TOK_IDENTIFIER,
-	TOK_OBRACKET,
-	TOK_CBRACKET,
-	TOK_OPAREN,
-	TOK_CPAREN,
-	TOK_EOF,
+	TOK_CONSTANT,
+	TOK_PLUS,
+	TOK_MINUS,
+	TOK_EOF
 };
 
 int ctok;
 struct token tokens[64];
 
-int storage_class_specifier(){
-	if(tokens[ctok].type == TOK_AUTO){
+
+void constant(){
+	if(tokens[ctok].type == TOK_CONSTANT){
 		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_REGISTER){
-		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_STATIC){
-		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_EXTERN){
-		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_TYPEDEF){
-		ctok++;
-		return 0;
 	} else {
-		return -1;
+		printf("Expected constant\n");
+		exit(1);
 	}
 }
 
-int type_specifier(){
-	if(tokens[ctok].type == TOK_VOID){
+void term(){
+	constant();
+}
+
+void rest_expression(){
+	if(tokens[ctok].type == TOK_PLUS){
 		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_CHAR){
+		term();
+		rest_expression();
+
+	} else if(tokens[ctok].type == TOK_MINUS){
 		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_SHORT){
-		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_INT){
-		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_LONG){
-		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_FLOAT){
-		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_DOUBLE){
-		ctok++;
-		return 0;
-	} else if(tokens[ctok].type == TOK_SIGNED){
-		ctok++;
-		return 0;
+		term();
+		rest_expression();
 	} else {
-		return -1;
+		// NULL production rule
 	}
+}
+
+void expression(){
+	term();
+	rest_expression();
 }
 
 int main(int argc, char *argv[]){
-	
+
+	tokens[0].type = TOK_CONSTANT;
+	tokens[0].value = 5;
+	tokens[1].type = TOK_PLUS;
+	tokens[2].type = TOK_CONSTANT;
+	tokens[2].value = 10;
+	tokens[3].type = TOK_EOF;
+
+	ctok = 0;
+	expression();
+	printf("%d\n", ctok);
 
 	return 0;
 }
