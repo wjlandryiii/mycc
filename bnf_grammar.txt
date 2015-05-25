@@ -1,4 +1,4 @@
-; from wikipedia
+# from wikipedia
 
 <syntax>         ::= <rule> | <rule> <syntax>
 <rule>           ::= <opt-whitespace> "<" <rule-name> ">" <opt-whitespace> "::=" <opt-whitespace> <expression> <line-end>
@@ -8,3 +8,14 @@
 <list>           ::= <term> | <term> <opt-whitespace> <list>
 <term>           ::= <literal> | "<" <rule-name> ">"
 <literal>        ::= '"' <text> '"' | "'" <text> "'"
+
+# my BNF grammar
+<grammar> 	::= <rule-list>;
+<rule-list> 	::= <rule> | <rule> <rule-list>;
+<rule> 		::= <rule-name> "::=" <expression> ";";
+<rule-name>	::= <non-terminal>
+<expression> 	::= <list> | <list> "|" <expression>;
+<list> 		::= <term> | <term> <list>;
+<term>		::= <terminal> | <non-terminal>;
+<terminal>	::= "TERMINAL"
+<non-terminal>	::= "NON_TERMINAL"
