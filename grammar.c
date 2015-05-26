@@ -24,8 +24,6 @@ enum TOK_TYPES {
 	TOK_NONTERMINAL,
 	TOK_TERMINAL,
 	TOK_PRODUCE,
-	TOK_OPENBRACKET,
-	TOK_CLOSEBRACKET,
 	TOK_PIPE,
 	TOK_SEMICOLON,
 	TOK_EOF,
@@ -35,9 +33,7 @@ char *token_type_strings[] = {
 	"INVALID",
 	"NON-TERMINAL",
 	"TERMINAL",
-	"PRODUCE (\"::=\")",
-	"OPENBRACKET ('[')",
-	"CLOSEBRACKET (']')",
+	"PRODUCE (':')",
 	"PIPE ('|')",
 	"SEMICOLON (';')",
 	"EOF",
@@ -150,50 +146,16 @@ int next_token(struct position *pos, char *s, struct token *token){
 		}
 	} else if(*s == ':'){
 		s++;
-		if(*s == ':'){
-			s++;
-			if(*s == '='){
-				s++;
-				token->end = s;
-				token->type = TOK_PRODUCE;
-				return 0;
-				if(pos){
-					pos->charNumber += token->end - token->start;
-				}
-			} else {
-				if(pos){
-					fprintf(stderr, "Line: %d:%d\n", pos->lineNumber, pos->charNumber);
-				}
-				fprintf(stderr, "expected ::=\n");
-				exit(1);
-			}
-		} else {
-			if(pos){
-				fprintf(stderr, "Line: %d:%d\n", pos->lineNumber, pos->charNumber);
-			}
-			fprintf(stderr, "expected ::=\n");
-			exit(1);
+		token->end = s;
+		token->type = TOK_PRODUCE;
+		if(pos){
+			pos->charNumber += token->end - token->start;
 		}
+		return 0;
 	} else if(*s == '|'){
 		s++;
 		token->end = s;
 		token->type = TOK_PIPE;
-		if(pos){
-			pos->charNumber += token->end - token->start;
-		}
-		return 0;
-	} else if(*s == '['){
-		s++;
-		token->end = s;
-		token->type = TOK_OPENBRACKET;
-		if(pos){
-			pos->charNumber += token->end - token->start;
-		}
-		return 0;
-	} else if(*s == ']'){
-		s++;
-		token->end = s;
-		token->type = TOK_CLOSEBRACKET;
 		if(pos){
 			pos->charNumber += token->end - token->start;
 		}
@@ -271,11 +233,7 @@ void test_tokens(void){
 	test_tokenizer(" \"hello world\" ", "\"hello world\"");
 	test_tokenizer(" \'hello world\' ", "\'hello world\'");
 	// TOK_PRODUCE,
-	test_tokenizer(" ::= ", "::=");
-	// TOK_OPENBRACKET,
-	test_tokenizer(" [ ", "[");
-	// TOK_CLOSEBRACKET,
-	test_tokenizer(" ] ", "]");
+	test_tokenizer(" : ", ":");
 	// TOK_PIPE,
 	test_tokenizer(" | ", "|");
 	// TOK_SEMICOLON,
@@ -416,10 +374,7 @@ void parse(){
 		if(tokens[parseTokenIndex].type == TOK_PRODUCE){
 			do {
 				parseTokenIndex++;
-				while(tokens[parseTokenIndex].type == TOK_NONTERMINAL
-						|| tokens[parseTokenIndex].type == TOK_TERMINAL
-						|| tokens[parseTokenIndex].type == TOK_OPENBRACKET
-						|| tokens[parseTokenIndex].type == TOK_CLOSEBRACKET){
+				while(tokens[parseTokenIndex].type == TOK_NONTERMINAL || tokens[parseTokenIndex].type == TOK_TERMINAL){
 					parseTokenIndex++;
 				}
 			} while(tokens[parseTokenIndex].type == TOK_PIPE);
@@ -450,11 +405,10 @@ void parse(){
 
 
 int main(int argc, char *argv[]){
-	//test_tokens();
+	test_tokens();
 	tokenize_file("grammar.txt");
 	//print_tokens();
 	parse();
 	printAllNonTerminals();
-	
 	return 0;
 }
