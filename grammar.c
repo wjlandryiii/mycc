@@ -12,6 +12,53 @@
 #include <string.h>
 #include <ctype.h>
 
+char stringTable[4*1024];
+int stringTableBytesUsed = 0;
+char *strings[1024];
+int stringCount;
+
+int lookupString(char *s, int len){
+	int i;
+
+	for(i = 0; i < stringCount; i++){
+		if(strlen(strings[i]) == len){
+			if(strncmp(strings[i], s, len) == 0){
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+char *addString(char *s, int len){
+	int i;
+
+	i = lookupString(s, len);
+	if(i >= 0){
+		return strings[i];
+	} else {
+		if(stringTableBytesUsed + len + 1 < sizeof(stringTable)){
+			if(stringCount + 1 < sizeof(strings) / sizeof(strings[0])){
+				strings[stringCount++] = &stringTable[stringTableBytesUsed];
+				memcpy(&stringTable[stringTableBytesUsed], s, len);
+				stringTableBytesUsed += len;
+				stringTable[stringTableBytesUsed] = '\0';
+				stringTableBytesUsed++;
+				return strings[stringCount-1];
+			} else {
+				fprintf(stderr, "strings is full\n");
+				exit(1);
+			}
+		} else {
+			fprintf(stderr, "stringTable is full\n");
+			exit(1);
+		}
+	}
+}
+
+
+
+
 struct position {
 	char *fileName;
 	int lineNumber;
@@ -41,6 +88,7 @@ char *token_type_strings[] = {
 
 struct token {
 	int type;
+	char *str;
 	char *start;
 	char *end;
 	struct position pos;
@@ -91,6 +139,7 @@ int next_token(struct position *pos, char *s, struct token *token){
 			s++;
 			token->end = s;
 			token->type = TOK_NONTERMINAL;
+			token->str = addString(token->start, token->end - token->start);
 			if(pos){
 				pos->charNumber += token->end - token->start;
 			}
@@ -112,6 +161,7 @@ int next_token(struct position *pos, char *s, struct token *token){
 			s++;
 			token->end = s;
 			token->type = TOK_TERMINAL;
+			token->str = addString(token->start, token->end - token->start);
 			if(pos){
 				pos->charNumber += token->end - token->start;
 			}
@@ -133,6 +183,7 @@ int next_token(struct position *pos, char *s, struct token *token){
 			s++;
 			token->end = s;
 			token->type = TOK_TERMINAL;
+			token->str = addString(token->start, token->end - token->start);
 			if(pos){
 				pos->charNumber += token->end - token->start;
 			}
@@ -148,6 +199,7 @@ int next_token(struct position *pos, char *s, struct token *token){
 		s++;
 		token->end = s;
 		token->type = TOK_PRODUCE;
+		token->str = ":";
 		if(pos){
 			pos->charNumber += token->end - token->start;
 		}
@@ -156,6 +208,7 @@ int next_token(struct position *pos, char *s, struct token *token){
 		s++;
 		token->end = s;
 		token->type = TOK_PIPE;
+		token->str = "|";
 		if(pos){
 			pos->charNumber += token->end - token->start;
 		}
@@ -164,6 +217,7 @@ int next_token(struct position *pos, char *s, struct token *token){
 		s++;
 		token->end = s;
 		token->type = TOK_SEMICOLON;
+		token->str = ";";
 		if(pos){
 			pos->charNumber += token->end - token->start;
 		}
@@ -172,6 +226,7 @@ int next_token(struct position *pos, char *s, struct token *token){
 		//s++;
 		token->end = s;
 		token->type = TOK_EOF;
+		token->str = "";
 		if(pos){
 			pos->charNumber += token->end - token->start;
 		}
@@ -297,97 +352,106 @@ void print_tokens(){
 	printf("Token count: %d\n", tokenCount);
 }
 
-char stringTable[4*1024];
-char *stringTableTail = stringTable;
-
-char *addString(char *s){
-	char *p;
-	p = stringTableTail;
-	strcpy(p, s);
-	stringTableTail += strlen(s)+1;
-	return p;
-}
-
-char *nonTerminalList[128];
-int nonTerminalCount = 0;
-void addNonTerminal(char *s){
-	char *p = addString(s);
-	nonTerminalList[nonTerminalCount++] = p;
-}
-
-void printAllNonTerminals(){
-	int i;
-	for(i = 0; i < nonTerminalCount; i++){
-		printf("%s\n", nonTerminalList[i]);
-	}
-	printf("Count: %d\n", nonTerminalCount);
-}
 
 
-struct non_terminal {
-	struct token *token;
+struct production {
+	char *s;
+	struct production *next;
 };
 
-struct non_terminal *non_terminal(){
-	struct non_terminal *nt;
-	if(tokens[parseTokenIndex].type == TOK_NONTERMINAL){
-		nt = malloc(sizeof(struct non_terminal));
-		nt->token = &tokens[parseTokenIndex];
+char *term(){
+	int type = tokens[parseTokenIndex].type;
+	char *s = tokens[parseTokenIndex].str;
+
+	if(type == TOK_NONTERMINAL || type == TOK_TERMINAL){
 		parseTokenIndex++;
-		return nt;
+		return s;
 	} else {
-		fprintf(stderr, "Expected non-terminal\n");
-		fprintf(stderr, "line: %d:%d\n", tokens[parseTokenIndex].pos.lineNumber, tokens[parseTokenIndex].pos.charNumber);
-		return NULL;
+		fprintf(stderr, "term(): expected nonterminal or terminal\n");
+		exit(1);
 	}
 }
 
-struct terminal {
-	struct token *token;
+struct production *term_list(){
+	int type = tokens[parseTokenIndex].type;
+
+	struct production *p = malloc(sizeof(*p));
+
+	if(type == TOK_NONTERMINAL || type == TOK_TERMINAL){
+		p->s = term();
+		type = tokens[parseTokenIndex].type;
+		if(type == TOK_NONTERMINAL || type == TOK_TERMINAL){
+			p->next = term_list();
+		} else {
+			p->next = NULL;
+		}
+		return p;
+	} else {
+		fprintf(stderr, "term_list() expected terminal or nonterminal\n");
+		fprintf(stderr, "line: %d:%d\n", tokens[parseTokenIndex].pos.lineNumber, tokens[parseTokenIndex].pos.charNumber);
+		exit(1);
+	}
+}
+
+
+struct productions {
+	struct production *production;
+	struct productions *next;
 };
 
-struct terminal *terminal(){
-	struct terminal *t;
-	if(tokens[parseTokenIndex].type == TOK_TERMINAL){
-		t = malloc(sizeof(struct terminal));
-		t->token = &tokens[parseTokenIndex];
-		parseTokenIndex++;
-		return t;
+
+struct productions *productions(){
+	int type = tokens[parseTokenIndex].type;
+	struct productions *p = malloc(sizeof(struct productions));
+
+	if(type == TOK_TERMINAL || type == TOK_NONTERMINAL){
+
+		p->production = term_list();
+
+		if(tokens[parseTokenIndex].type == TOK_PIPE){
+			parseTokenIndex++;
+			p->next = productions();
+			return p;
+		} else if(tokens[parseTokenIndex].type == TOK_SEMICOLON){
+			parseTokenIndex++;
+			p->next = NULL;
+			return p;
+		} else {
+			fprintf(stderr, "how did i get here??\n");
+			return NULL;
+		}
 	} else {
-		fprintf(stderr, "Expected terminal\n");
+		fprintf(stderr, "productions() expected terminal or nonterminal\n");
 		fprintf(stderr, "line: %d:%d\n", tokens[parseTokenIndex].pos.lineNumber, tokens[parseTokenIndex].pos.charNumber);
-		return NULL;
+		exit(1);
 	}
 }
 
+
+
+struct rule {
+	char *rule_name;
+	struct node *tail;
+	struct productions *productions;
+};
+
+struct rule rules[128];
+int ruleCount = 0;
 
 void parse(){
 	parseTokenIndex = 0;
 
+	struct rule *rule;
 	while(tokens[parseTokenIndex].type == TOK_NONTERMINAL){
-		tokens[parseTokenIndex].start++;
-		tokens[parseTokenIndex].end--;
-		*tokens[parseTokenIndex].end = '\0';
-		addNonTerminal(tokens[parseTokenIndex].start);
+		rule = &rules[ruleCount++];
+		rule->rule_name = tokens[parseTokenIndex].str;
 		parseTokenIndex++;
 
 		if(tokens[parseTokenIndex].type == TOK_PRODUCE){
-			do {
-				parseTokenIndex++;
-				while(tokens[parseTokenIndex].type == TOK_NONTERMINAL || tokens[parseTokenIndex].type == TOK_TERMINAL){
-					parseTokenIndex++;
-				}
-			} while(tokens[parseTokenIndex].type == TOK_PIPE);
-			if(tokens[parseTokenIndex].type == TOK_SEMICOLON){
-				parseTokenIndex++;
-			} else {
-				fprintf(stderr, "Expected \";\"\n");
-				fprintf(stderr, "Got: %s\n", token_type_strings[tokens[parseTokenIndex].type]);
-				fprintf(stderr, "line: %d:%d\n", tokens[parseTokenIndex].pos.lineNumber, tokens[parseTokenIndex].pos.charNumber);
-				return;
-			}
+			parseTokenIndex++;
+			rule->productions = productions();
 		} else {
-			fprintf(stderr, "Expected \"::=\"\n");
+			fprintf(stderr, "Expected \":\"\n");
 			fprintf(stderr, "Got: %s\n", token_type_strings[tokens[parseTokenIndex].type]);
 			fprintf(stderr, "line: %d:%d\n", tokens[parseTokenIndex].pos.lineNumber, tokens[parseTokenIndex].pos.charNumber);
 			return;
@@ -403,12 +467,50 @@ void parse(){
 	}
 }
 
+void print_rules(){
+	int i;
+	for(i = 0; i < ruleCount; i++){
+		printf("%s\n", rules[i].rule_name);
+		struct productions *ps = rules[i].productions;
+		if(ps != NULL){
+			printf("\t: ");
+			struct production *p = ps->production;
+			while(p != NULL){
+				printf("%s", p->s);
+				p = p->next;
+				if(p != NULL){
+					printf(" ");
+				} else {
+					printf("\n");
+				}
+			}
+			ps = ps->next;
+			while(ps != NULL){
+				printf("\t| ");
+				struct production *p = ps->production;
+				while(p != NULL){
+					printf("%s", p->s);
+					p = p->next;
+					if(p != NULL){
+						printf(" ");
+					} else {
+						printf("\n");
+					}
+				}
+				ps = ps->next;
+			}
+		}
+		printf("\t;\n\n");
+	}
+}
+
 
 int main(int argc, char *argv[]){
 	test_tokens();
 	tokenize_file("grammar.txt");
 	//print_tokens();
 	parse();
-	printAllNonTerminals();
+
+	print_rules();
 	return 0;
 }

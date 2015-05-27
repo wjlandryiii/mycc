@@ -10,12 +10,9 @@
 <literal>        ::= '"' <text> '"' | "'" <text> "'"
 
 # my BNF grammar
-<grammar> 	::= <rule-list>;
-<rule-list> 	::= <rule> | <rule> <rule-list>;
-<rule> 		::= <rule-name> "::=" <expression> ";";
-<rule-name>	::= <non-terminal>
-<expression> 	::= <list> | <list> "|" <expression>;
-<list> 		::= <term> | <term> <list>;
-<term>		::= <terminal> | <non-terminal>;
+<grammar> 	::= <rule> | <rule> <grammar>;
+<rule> 		::= <lhs> ":" <rhs> ";";
+<lhs>		::= <non-terminal>;
+<rhs>	 	::= <rhs> | <rhs> "|" <rhs> | <terminal> | <non-terminal>;
 <terminal>	::= "TERMINAL"
 <non-terminal>	::= "NON_TERMINAL"

@@ -249,9 +249,6 @@
 	| "switch" "(" <expression> ")" <statement>
 	;
 
-
-# TODO: start here
-
 <iteration-statement>
 	: "while" "(" <expression> ")" <statement>
 	| "do" <statement> "while" "(" <expression> ")" ";"
