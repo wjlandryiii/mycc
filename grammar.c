@@ -56,7 +56,35 @@ char *addString(char *s, int len){
 	}
 }
 
+struct symbol {
+	char *name;
+};
 
+struct symbol symbols[128];
+int symbolCount = 0;
+
+int lookupSymbol(char *s){
+	int i;
+	for(i = 0; i < symbolCount; i++){
+		if(strcmp(symbols[i].name, s) == 0){
+			return i;
+		}
+	}
+	return -1;
+}
+
+int addSymbol(char *s){
+	int i;
+
+	i = lookupSymbol(s);
+	if(i < 0){
+		struct symbol symbol;
+		symbol.name = s;
+		i = symbolCount;
+		symbols[symbolCount++] = symbol;
+	}
+	return i;
+}
 
 
 struct position {
@@ -88,6 +116,7 @@ char *token_type_strings[] = {
 
 struct token {
 	int type;
+	int symbol;
 	char *str;
 	char *start;
 	char *end;
@@ -140,6 +169,7 @@ int next_token(struct position *pos, char *s, struct token *token){
 			token->end = s;
 			token->type = TOK_NONTERMINAL;
 			token->str = addString(token->start, token->end - token->start);
+			token->symbol = addSymbol(token->str);
 			if(pos){
 				pos->charNumber += token->end - token->start;
 			}
@@ -356,6 +386,8 @@ void print_tokens(){
 
 struct production {
 	char *s;
+	int type;
+	int symbol;
 	struct production *next;
 };
 
@@ -379,6 +411,8 @@ struct production *term_list(){
 
 	if(type == TOK_NONTERMINAL || type == TOK_TERMINAL){
 		p->s = term();
+		p->type = type;
+		p->symbol = tokens[parseTokenIndex].symbol;
 		type = tokens[parseTokenIndex].type;
 		if(type == TOK_NONTERMINAL || type == TOK_TERMINAL){
 			p->next = term_list();
@@ -504,13 +538,85 @@ void print_rules(){
 	}
 }
 
+void find_orphan_symbols(){
+	int i, j;
+
+	for(i = 0; i < symbolCount; i++){
+		for(j = 0; j < ruleCount; j++){
+			if(strcmp(symbols[i].name, rules[j].rule_name) == 0){
+				break;
+			}
+		}
+		if(j == ruleCount){
+			printf("ORPHAN SYMBOL: %s\n", symbols[i].name);
+		}
+	}
+}
+
+void print_all_terminals(){
+	int i, j;
+	char *terminals[128];
+	int terminalCount = 0;
+
+	for(i = 0; i < ruleCount; i++){
+		struct productions *ps = rules[i].productions;
+
+		while(ps != NULL){
+			struct production *p;
+
+			p = ps->production;
+			while(p != NULL){
+				if(p->type == TOK_TERMINAL){
+					for(j = 0; j < terminalCount; j++){
+						if(terminals[j] == p->s){
+							break;
+						}
+					}
+					if(j == terminalCount){
+						terminals[terminalCount++] = p->s;
+					}
+				}
+				p = p->next;
+			}
+			ps = ps->next;
+		}
+	}
+
+	for(i = 0; i < terminalCount; i++){
+		printf("TERMINAL: %s\n", terminals[i]);
+	}
+}
+
+
+void find_direct_left_recursion(){
+	int i, j;
+
+	for(i = 0; i < ruleCount; i++){
+		char *ruleName = rules[i].rule_name;
+		struct productions *ps = rules[i].productions;
+
+		while(ps != NULL){
+			struct production *p = ps->production;
+
+			if(p != NULL && p->type == TOK_NONTERMINAL && strcmp(p->s, ruleName)){
+				printf("DIRECT LEFT RECURSION: %s\n", ruleName);
+				break;
+			}
+			ps = ps->next;
+		}
+	}
+}
+
 
 int main(int argc, char *argv[]){
-	test_tokens();
+	//test_tokens();
 	tokenize_file("grammar.txt");
 	//print_tokens();
 	parse();
 
-	print_rules();
+	//print_rules();
+	//find_orphan_symbols();
+	print_all_terminals();
+	//find_direct_left_recursion();
 	return 0;
 }

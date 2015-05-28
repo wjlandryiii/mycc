@@ -17,7 +17,7 @@
 
 <declaration>
 	: <declaration-specifiers> ";"
-	| <declaration-specifiers> <init-declaration-list> ";"
+	| <declaration-specifiers> <init-declarator-list> ";"
 	;
 
 <declaration-list>
@@ -63,8 +63,8 @@
 
 <struct-or-union-specifier>
 	: <struct-or-union> "{" <struct-declaration-list> "}"
-	| <struct-or-union> <identifier> "{" <struct-declaration-list> "}"
-	| <struct-or-union> <identifier>
+	| <struct-or-union> "%IDENTIFIER%" "{" <struct-declaration-list> "}"
+	| <struct-or-union> "%IDENTIFIER%"
 	;
 
 <struct-or-union>
@@ -111,8 +111,8 @@
 
 <enum-specifier>
 	: "enum" "{" <enumerator-list> "}"
-	| "enum" <identifier> "{" <enumerator-list> "}"
-	| "enum" <identifier>
+	| "enum" "%IDENTIFIER%" "{" <enumerator-list> "}"
+	| "enum" "%IDENTIFIER%"
 	;
 
 <enumerator-list>
@@ -121,8 +121,8 @@
 	;
 
 <enumerator>
-	: <identifier>
-	| <identifier> "=" <constant-expression>
+	: "%IDENTIFIER%"
+	| "%IDENTIFIER%" "=" <constant-expression>
 	;
 
 <declarator>
@@ -131,7 +131,7 @@
 	;
 
 <direct-declarator>
-	: <identifier>
+	: "%IDENTIFIER%"
 	| "(" <declarator> ")"
 	| <direct-declarator> "[" "]"
 	| <direct-declarator> "[" <constant-expression> "]"
@@ -169,8 +169,8 @@
 	;
 
 <identifier-list>
-	: <identifier>
-	| <identifier-list> "," <identifier>
+	: "%IDENTIFIER%"
+	| <identifier-list> "," "%IDENTIFIER%"
 	;
 
 <initializer>
@@ -208,7 +208,7 @@
 	;
 
 <typedef-name>
-	: <identifier>
+	: "%IDENTIFIER%"
 	;
 
 <statement>
@@ -221,7 +221,7 @@
 	;
 
 <labeled-statement>
-	: <identifier> ":" <statement>
+	: "%IDENTIFIER%" ":" <statement>
 	| "case" <constant-expression> ":" <statement>
 	| "default" ":" <statement>
 	;
@@ -263,7 +263,7 @@
 	;
 
 <jump-statement>
-	: "goto" <identifier> ";"
+	: "goto" "%IDENTIFIER%" ";"
 	| "continue" ";"
 	| "break" ";"
 	| "return" ";"
@@ -310,7 +310,7 @@
 
 <logical-AND-expression>
 	: <inclusive-OR-expression>
-	| <logical-AND-expression> "&&" <inclusive-OR-operation>
+	| <logical-AND-expression> "&&" <inclusive-OR-expression>
 	;
 
 <inclusive-OR-expression>
@@ -389,16 +389,16 @@
 	| <postfix-expression> "[" <expression> "]"
 	| <postfix-expression> "(" ")"
 	| <postfix-expression> "(" <argument-expression-list> ")"
-	| <postfix-expression> "." <identifier>
-	| <postfix-expression> "->" <identifier>
+	| <postfix-expression> "." "%IDENTIFIER%"
+	| <postfix-expression> "->" "%IDENTIFIER%"
 	| <postfix-expression> "++"
 	| <postfix-expression> "--"
 	;
 
 <primary-expression>
-	: <identifier>
+	: "%IDENTIFIER%"
 	| <constant>
-	| <string>
+	| "%STRING%"
 	| "(" <expression> ")"
 	;
 
@@ -408,8 +408,8 @@
 	;
 
 <constant>
-	: <integer-constant>
-	| <character-constant>
-	| <float-constant>
-	| <enumeration-constant>
+	: "%INTEGER-CONSTANT%"
+	| "%CHARACTER-CONSTANT%"
+	| "%FLOAT-CONSTANT%"
+	| "%ENUMERATION-CONSTANT%"
 	;
