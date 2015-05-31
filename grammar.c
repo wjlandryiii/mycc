@@ -598,7 +598,7 @@ void find_direct_left_recursion(){
 		while(ps != NULL){
 			struct production *p = ps->production;
 
-			if(p != NULL && p->type == TOK_NONTERMINAL && strcmp(p->s, ruleName)){
+			if(p != NULL && p->type == TOK_NONTERMINAL && strcmp(p->s, ruleName) == 0){
 				printf("DIRECT LEFT RECURSION: %s\n", ruleName);
 				break;
 			}
@@ -606,6 +606,7 @@ void find_direct_left_recursion(){
 		}
 	}
 }
+
 
 
 int main(int argc, char *argv[]){
@@ -616,7 +617,7 @@ int main(int argc, char *argv[]){
 
 	//print_rules();
 	//find_orphan_symbols();
-	print_all_terminals();
-	//find_direct_left_recursion();
+	//print_all_terminals();
+	find_direct_left_recursion();
 	return 0;
 }
