@@ -16,3 +16,32 @@
 <rhs>	 	::= <rhs> | <rhs> "|" <rhs> | <terminal> | <non-terminal>;
 <terminal>	::= "TERMINAL"
 <non-terminal>	::= "NON_TERMINAL"
+
+#
+
+<S>
+	: <RuleSet>
+	| <RuleSet> <S>
+	;
+
+<RuleSet>
+	: <RuleName> ":" <RuleList> ";"
+
+<RuleList>
+	: <TermList>
+	| <TermList> "|" <RuleList>
+	;
+
+<TermList>
+	: <Term>
+	| <Term> <TermList>
+	;
+
+<Term>
+	: <terminal>
+	| <non-terminal>
+	;
+
+<RuleName>
+	: <non-terminal>
+	;

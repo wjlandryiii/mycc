@@ -1,6 +1,11 @@
+*.o
 *.swp
 *.dSYM*
 lexer
 parser
 shuntingyard
 grammar/grammar
+grammar/test_symbols
+grammar/test_stringtable
+grammar/test_lexer
+grammar/main
