@@ -10,8 +10,9 @@
 static char stringBuf[16*1024];
 static int bytesUsed = 1;
 
-static char *strings[1024] = {stringBuf, 0};
-static int stringCount = 1;
+char *strings[1024] = {stringBuf, 0};
+int stringCount = 1;
+
 
 static char *appendString(char *s){
 	char *p;
