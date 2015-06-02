@@ -28,5 +28,7 @@ extern int nonterminalCount;
 
 int lookupSymbol(int string);
 int setSymbol(int string, int type);
+int insertTerminal(int stringIndex);
+int insertNonterminal(int stringIndex);
 
 #endif

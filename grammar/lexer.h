@@ -28,6 +28,8 @@ enum LEX_ERRORS {
 struct token {
 	int name;
 	int symbol;
+	int terminalIndex;
+	int nonterminalIndex;
 };
 
 extern char lexerInputBuffer[16*1024];

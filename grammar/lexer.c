@@ -116,12 +116,16 @@ int tokenize(void){
 	int name = TOKNAME_INVALID;
 	char buf[64];
 	int length;
+	int terminalIndex;
+	int nonterminalIndex;
 
 	tokenStreamLength = 0;
 	lexerErrorLineNumber = 1;
 	in = lexerInputBuffer;
 
 	while(name != TOKNAME_EOF){
+		terminalIndex = -1;
+		nonterminalIndex = -1;
 		in += skipWhiteSpaceAndComments();
 		if(!nextLexeme(&name, &length)){
 			if(name == TOKNAME_TERMINAL || name == TOKNAME_NONTERMINAL){
@@ -139,8 +143,10 @@ int tokenize(void){
 					i = stringtableAddString(buf);
 					if(name == TOKNAME_TERMINAL){
 						symType = SYMTYPE_TERMINAL;
+						terminalIndex = insertTerminal(i);
 					} else {
 						symType = SYMTYPE_NONTERMINAL;
+						nonterminalIndex = insertNonterminal(i);
 					}
 					i = setSymbol(i, symType);
 					tokenStream[tokenStreamLength].symbol = i;
@@ -151,6 +157,8 @@ int tokenize(void){
 				tokenStream[tokenStreamLength].symbol = -1;
 			}
 			tokenStream[tokenStreamLength].name = name;
+			tokenStream[tokenStreamLength].terminalIndex = terminalIndex;
+			tokenStream[tokenStreamLength].nonterminalIndex = nonterminalIndex;
 			tokenStreamLength++;
 			in += length;
 		} else {
