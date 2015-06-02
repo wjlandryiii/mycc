@@ -4,8 +4,8 @@
 
 #include "symbols.h"
 
-struct symbol symbolList[1024];
-int symbolCount;
+struct symbol symbolList[1024] = { {SYMTYPE_SIGMA, 0}, {0,0} };
+int symbolCount = 1;
 
 int lookupSymbol(int string){
 	int i;

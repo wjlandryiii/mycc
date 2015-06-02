@@ -18,7 +18,8 @@ static struct term_list *termList(){
 	struct term_list *tl = malloc(sizeof(struct term_list));
 
 	if(tokenStream[tokenIndex].name == TOKNAME_TERMINAL
-			|| tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL){
+			|| tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL
+			|| tokenStream[tokenIndex].name == TOKNAME_SIGMA){
 		tl->termSymbol = tokenStream[tokenIndex].symbol;
 		tokenIndex++;
 

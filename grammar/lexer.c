@@ -58,27 +58,37 @@ static int nextLexeme(int *nameOut, int *lengthOut){
 		}
 	} else if(*p == '"'){
 		p++;
-		while(*p != '"' && *p != '\0' && *p != '\n'){
-			p++;
-		}
 		if(*p == '"'){
 			p++;
-			name = TOKNAME_TERMINAL;
+			name = TOKNAME_SIGMA;
 		} else {
-			lexerErrorNumber = LEXERR_TERMINAL;
-			return -1;
+			while(*p != '"' && *p != '\0' && *p != '\n'){
+				p++;
+			}
+			if(*p == '"'){
+				p++;
+				name = TOKNAME_TERMINAL;
+			} else {
+				lexerErrorNumber = LEXERR_TERMINAL;
+				return -1;
+			}
 		}
 	} else if(*p == '\''){
 		p++;
-		while(*p != '\'' && *p != '\0' && *p != '\n'){
-			p++;
-		}
 		if(*p == '\''){
 			p++;
-			name = TOKNAME_TERMINAL;
+			name = TOKNAME_SIGMA;
 		} else {
-			lexerErrorNumber = LEXERR_TERMINAL;
-			return -1;
+			while(*p != '\'' && *p != '\0' && *p != '\n'){
+				p++;
+			}
+			if(*p == '\''){
+				p++;
+				name = TOKNAME_TERMINAL;
+			} else {
+				lexerErrorNumber = LEXERR_TERMINAL;
+				return -1;
+			}
 		}
 	} else if(*p == ':'){
 		p++;
@@ -122,8 +132,8 @@ int tokenize(void){
 					int symType;
 					int i;
 
-					for(i = 0; i < length; i++){
-						buf[i] = in[i];
+					for(i = 0; i < length - 2; i++){
+						buf[i] = in[i+1];
 					}
 					buf[i] = 0;
 					i = stringtableAddString(buf);
@@ -135,6 +145,8 @@ int tokenize(void){
 					i = setSymbol(i, symType);
 					tokenStream[tokenStreamLength].symbol = i;
 				}
+			} else if(name == TOKNAME_SIGMA){
+				tokenStream[tokenStreamLength].symbol = 0;
 			} else {
 				tokenStream[tokenStreamLength].symbol = -1;
 			}

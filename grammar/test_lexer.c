@@ -33,6 +33,8 @@ void test_tokens(void){
 	test_lexer(" : ", TOKNAME_COLON);
 	test_lexer(" | ", TOKNAME_PIPE);
 	test_lexer(" ; ", TOKNAME_SEMICOLON);
+	test_lexer(" \"\" ", TOKNAME_SIGMA);
+	test_lexer(" '' ", TOKNAME_SIGMA);
 	test_lexer("  ", TOKNAME_EOF);
 	test_lexer("# comment <aaa> [ ] ::= ; \"moo\"\n<hello> : ", TOKNAME_NONTERMINAL);
 }

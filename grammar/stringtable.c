@@ -8,7 +8,7 @@
 #include <strings.h>
 
 static char stringBuf[16*1024];
-static int bytesUsed;
+static int bytesUsed = 1;
 
 static char *strings[1024] = {stringBuf, 0};
 static int stringCount = 1;

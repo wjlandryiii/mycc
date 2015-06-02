@@ -10,9 +10,9 @@
 #include "symbols.h"
 #include "lexer.h"
 #include "parser.h"
+#include "firstfollow.h"
 
-void loadInput(void){
-	char *fileName = "grammar.txt";
+void loadInput(char *fileName){
 	long fileSize;
 	FILE *f;
 
@@ -58,7 +58,11 @@ void printTermList(struct term_list *tl){
 	stringIndex = symbolList[symbolIndex].string;
 	string = stringtableGetString(stringIndex);
 
-	printf(" %s", string);
+	if(symbolList[symbolIndex].type == SYMTYPE_NONTERMINAL){
+		printf(" <%s>", string);
+	} else {
+		printf(" \"%s\"", string);
+	}
 
 	if(tl->nextTermList != NULL){
 		printTermList(tl->nextTermList);
@@ -98,7 +102,7 @@ void printRuleSet(struct rule_set *rs){
 	symbolIndex = rs->ruleNameSymbol;
 	stringIndex = symbolList[symbolIndex].string;
 	string = stringtableGetString(stringIndex);
-	printf("%s\n", string);
+	printf("<%s>\n", string);
 
 	printRuleList(rs->ruleList, 0);
 
@@ -114,10 +118,55 @@ void printParseTree(){
 	printRuleSet(parseTree);
 }
 
+void printFFSet(struct ff_set_node *n){
+	if(n != NULL){
+		while(n){
+			int symbolIndex;
+			int stringIndex;
+			char *string;
+
+			symbolIndex = n->symbolIndex;
+			stringIndex = symbolList[symbolIndex].string;
+			string = stringtableGetString(stringIndex);
+			printf(" %s", string);
+			n = n->next;
+		}
+		printf("\n");
+	} else {
+		printf(" (empty)\n");
+	}
+}
+
+void printFirstFollow(){
+	struct ff_node *p;
+	int symbolIndex;
+	int stringIndex;
+	char *string;
+
+	p = firstFollowSet;
+
+	while(p){
+		symbolIndex = p->nonTerminalSymbolIndex;
+		stringIndex = symbolList[symbolIndex].string;
+		string = stringtableGetString(stringIndex);
+		printf("%s\n", string);
+		printf("\tNullable  : %s\n", p->isNullable ? "YES" : "NO");
+		printf("\tFIRST SET :");
+		printFFSet(p->first);
+		printf("\tFOLLOW SET:");
+		printFFSet(p->follow);
+
+		printf("\n");
+		p = p->next;
+	}
+}
+
 int main(int argc, char *argv[]){
 	int result;
+	char *fileName = "grammar.txt";
+	//fileName = "grammar_3_12.txt";
 
-	loadInput();
+	loadInput(fileName);
 	result = tokenize();
 	if(result != 0){
 		fprintf(stderr, "lexer error: %d on line: %d\n",
@@ -131,6 +180,9 @@ int main(int argc, char *argv[]){
 	}
 
 	printParseTree();
+	
+	firstfollow();
+	printFirstFollow();
 
 	return 0;
 }
