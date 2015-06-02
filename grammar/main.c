@@ -164,7 +164,7 @@ void printFirstFollow(){
 int main(int argc, char *argv[]){
 	int result;
 	char *fileName = "grammar.txt";
-	//fileName = "grammar_3_12.txt";
+	fileName = "grammar_3_12.txt";
 
 	loadInput(fileName);
 	result = tokenize();
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]){
 	}
 
 	printParseTree();
-	
+
 	firstfollow();
 	printFirstFollow();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Joseph Landry All Rights Reserved
+ *	 Copyright 2015 Joseph Landry All Rights Reserved
  */
 
 #include <stdlib.h>
@@ -82,15 +82,14 @@ static int unionFirstSets(int symbolIndex, int withSymbolIndex){
 	return 0;
 }
 
-int firstfollow(){
+static int initFirstFollow(){
 	struct rule_set *p = parseTree;
 	struct ff_node *list = 0;
 	struct ff_node **parent = &list;
-	int changed;
 
 	while(p){
 		struct ff_node *l = malloc(sizeof(struct ff_node));
-		
+
 		if(l == 0){
 			// memory error
 			return -1;
@@ -106,8 +105,17 @@ int firstfollow(){
 		p = p->nextRuleSet;
 		parent = &l->next;
 	}
-
 	firstFollowSet = list;
+	return 0;
+}
+
+
+int firstfollow(){
+	struct rule_set *p = parseTree;
+	int changed;
+
+	initFirstFollow();
+
 	changed = 1;
 	while(changed){
 		changed = 0;
@@ -143,19 +151,6 @@ int firstfollow(){
 						allNullable &= 1;
 					}
 
-					/*
-					if(allNullable && termList->nextTermList){
-						int sindex;
-						sindex = termList->nextTermList->termSymbol;
-						type = symbolList[sindex].type;
-						if(type == SYMTYPE_NONTERMINAL){
-							// union FIRST(Yi)
-							changed |= unionFirstSets(symbol, sindex);
-						} else if(type == SYMTYPE_TERMINAL){
-							changed |= setFirstLiteral(symbol, sindex);
-						}
-					}
-					*/
 					termList = termList->nextTermList;
 				}
 				if(allNullable && !isNullable(symbol)){
@@ -167,8 +162,6 @@ int firstfollow(){
 			p = p->nextRuleSet;
 		}
 	}
-
-
 
 	return 0;
 }
