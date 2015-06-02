@@ -56,7 +56,7 @@ void printTermList(struct term_list *tl){
 
 	symbolIndex = tl->termSymbol;
 	stringIndex = symbolList[symbolIndex].string;
-	string = stringtableGetString(stringIndex);
+	string = strings[stringIndex];
 
 	if(symbolList[symbolIndex].type == SYMTYPE_NONTERMINAL){
 		printf(" <%s>", string);
@@ -101,7 +101,7 @@ void printRuleSet(struct rule_set *rs){
 
 	symbolIndex = rs->ruleNameSymbol;
 	stringIndex = symbolList[symbolIndex].string;
-	string = stringtableGetString(stringIndex);
+	string = strings[stringIndex];
 	printf("<%s>\n", string);
 
 	printRuleList(rs->ruleList, 0);
@@ -127,7 +127,7 @@ void printFFSet(struct ff_set_node *n){
 
 			symbolIndex = n->symbolIndex;
 			stringIndex = symbolList[symbolIndex].string;
-			string = stringtableGetString(stringIndex);
+			string = strings[stringIndex];
 			printf(" %s", string);
 			n = n->next;
 		}
@@ -148,7 +148,7 @@ void printFirstFollow(){
 	while(p){
 		symbolIndex = p->nonTerminalSymbolIndex;
 		stringIndex = symbolList[symbolIndex].string;
-		string = stringtableGetString(stringIndex);
+		string = strings[stringIndex];
 		printf("%s\n", string);
 		printf("\tNullable  : %s\n", p->isNullable ? "YES" : "NO");
 		printf("\tFIRST SET :");

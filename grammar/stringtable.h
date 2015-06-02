@@ -5,10 +5,9 @@
 #ifndef STRINGTABLE_H
 #define STRINGTABLE_H
 
-extern char *strings[1024] = {stringBuf, 0};
-extern int stringCount = 1;
+extern char *strings[1024];
+extern int stringCount;
 
 int stringtableAddString(char *s);
-char *stringtableGetString(int i);
 
 #endif

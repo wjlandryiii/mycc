@@ -9,8 +9,8 @@
 void runTest(void){
 	int i;
 	char *p;
-	
-	p = stringtableGetString(0);
+
+	p = strings[0];
 	if(p == NULL){
 		printf("missing empty string\n");
 		return;
@@ -19,13 +19,13 @@ void runTest(void){
 		printf("emty string is not empty\n");
 		return;
 	}
-	p = stringtableGetString(1);
+	p = strings[1];
 	if(p != NULL){
 		printf("found a string that doesn't exist\n");
 		return;
 	}
 	i = stringtableAddString("asdf");
-	p = stringtableGetString(i);
+	p = strings[i];
 	if(strcmp("asdf", p) != 0){
 		printf("test string doesn't match\n");
 		return;

@@ -57,10 +57,3 @@ int stringtableAddString(char *s){
 		return i;
 	}
 }
-
-char *stringtableGetString(int i){
-	if(i < 0 || i >= stringCount){
-		return 0;
-	}
-	return strings[i];
-}
