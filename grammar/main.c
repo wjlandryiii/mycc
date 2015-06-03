@@ -126,7 +126,7 @@ void printFFSet(struct ff_set_node *n){
 			char *string;
 
 			symbolIndex = n->symbolIndex;
-			stringIndex = symbolList[symbolIndex].string;
+			stringIndex = terminals[symbolIndex];
 			string = strings[stringIndex];
 			printf(" %s", string);
 			n = n->next;
@@ -147,7 +147,7 @@ void printFirstFollow(){
 
 	while(p){
 		symbolIndex = p->nonTerminalSymbolIndex;
-		stringIndex = symbolList[symbolIndex].string;
+		stringIndex = nonterminals[symbolIndex];
 		string = strings[stringIndex];
 		printf("%s\n", string);
 		printf("\tNullable  : %s\n", p->isNullable ? "YES" : "NO");

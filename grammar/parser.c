@@ -8,6 +8,31 @@
 
 #include <stdlib.h>
 
+struct rule_set;
+struct rule_list;
+struct term_list;
+
+struct rule_set {
+	int ruleNameSymbol;
+	struct rule_list *ruleList;
+	struct rule_set *nextRuleSet;
+};
+
+struct rule_list {
+	struct term_list *termList;
+	struct rule_list *nextRuleList;
+};
+
+struct term_list {
+	int termSymbol;
+	struct term_list *nextTermList;
+};
+
+
+extern struct rule_set *parseTree;
+
+// TODO: stop from .h file
+
 
 static struct term terms[1024];
 int termCount;

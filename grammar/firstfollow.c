@@ -83,11 +83,12 @@ static int unionFirstSets(int symbolIndex, int withSymbolIndex){
 }
 
 static int initFirstFollow(){
-	struct rule_set *p = parseTree;
 	struct ff_node *list = 0;
 	struct ff_node **parent = &list;
 
-	while(p){
+	//while(p){
+	int nonterminalIndex;
+	for(nonterminalIndex = 0; nonterminalIndex < nonterminalCount; nonterminalIndex++){
 		struct ff_node *l = malloc(sizeof(struct ff_node));
 
 		if(l == 0){
@@ -97,12 +98,11 @@ static int initFirstFollow(){
 
 		*parent = l;
 		l->next = 0;
-		l->nonTerminalSymbolIndex = p->ruleNameSymbol;
+		l->nonTerminalSymbolIndex = nonterminalIndex;
 		l->isNullable = 0;
 		l->first = 0;
 		l->follow = 0;
 
-		p = p->nextRuleSet;
 		parent = &l->next;
 	}
 	firstFollowSet = list;
@@ -111,7 +111,7 @@ static int initFirstFollow(){
 
 
 int firstfollow(){
-	struct rule_set *p = parseTree;
+	int ruleIndex;
 	int changed;
 
 	initFirstFollow();
@@ -120,46 +120,41 @@ int firstfollow(){
 	while(changed){
 		changed = 0;
 
-		p = parseTree;
-		while(p){
-			int symbol = p->ruleNameSymbol;
-			struct rule_list *ruleList = p->ruleList;
+		ruleIndex = 0;
+		for(ruleIndex = 0; ruleIndex < ruleCount; ruleIndex++){
+			int bodyIndex;
+			int symbol = rules[ruleIndex].nonterminalIndex;
+			int bodyLength = rules[ruleIndex].bodyLength;
+			struct term *body = rules[ruleIndex].body;
 
-			while(ruleList){
-				struct term_list *termList = ruleList->termList;
-				int allNullable = 1;
-				while(termList){
-					int type = symbolList[termList->termSymbol].type;
-					if(allNullable){
-						int sindex;
-						sindex = termList->termSymbol;
-						type = symbolList[sindex].type;
-						if(type == SYMTYPE_NONTERMINAL){
-							// union FIRST(Yi)
-							changed |= unionFirstSets(symbol, sindex);
-						} else if(type == SYMTYPE_TERMINAL){
-							changed |= setFirstLiteral(symbol, sindex);
-						}
+			int allNullable = 1;
+
+			for(bodyIndex = 0; bodyIndex < bodyLength; bodyIndex++){
+				int type = body[bodyIndex].type;
+				int index = body[bodyIndex].index;
+
+				if(allNullable){
+					if(type == TERMTYPE_NONTERMINAL){
+						changed |= unionFirstSets(symbol, index);
+					} else if(type == TERMTYPE_TERMINAL){
+						changed |= setFirstLiteral(symbol, index);
 					}
-
-					type = symbolList[termList->termSymbol].type;
-					if(type == SYMTYPE_NONTERMINAL){
-						allNullable &= isNullable(termList->termSymbol);
-					} else if(type == SYMTYPE_TERMINAL){
-						allNullable = 0;
-					} else if(type == SYMTYPE_SIGMA){
-						allNullable &= 1;
-					}
-
-					termList = termList->nextTermList;
 				}
-				if(allNullable && !isNullable(symbol)){
-					setIsNullable(symbol);
-					changed = 1;
+
+				if(type == TERMTYPE_NONTERMINAL){
+					allNullable &= isNullable(index);
+				} else if(type == TERMTYPE_TERMINAL){
+					allNullable = 0;
+				} else {
+					// TODO: was sigma
+					// allNullable &= 1;
+					;
 				}
-				ruleList = ruleList->nextRuleList;
 			}
-			p = p->nextRuleSet;
+			if(allNullable && !isNullable(symbol)){
+				setIsNullable(symbol);
+				changed = 1;
+			}
 		}
 	}
 
