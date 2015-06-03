@@ -5,6 +5,26 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+enum PARSER_TERMTYPES{
+	TERMTYPE_UNKNOWN = 0,
+	TERMTYPE_TERMINAL,
+	TERMTYPE_NONTERMINAL,
+};
+
+struct term {
+	int type;
+	int index;
+};
+
+struct rule {
+	int nonterminalIndex;
+	int bodyLength;
+	struct term *body;
+};
+
+extern struct rule rules[256];
+extern int ruleCount;
+
 struct rule_set;
 struct rule_list;
 struct term_list;

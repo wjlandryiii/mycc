@@ -1,4 +1,4 @@
-all: main grammar test_stringtable test_lexer test_symbols
+all: main grammar test_stringtable test_lexer test_symbols test_parser
 
 main: main.o firstfollow.o parser.o lexer.o stringtable.o symbols.o
 	gcc -Wl,-stack_size -Wl,0x1000000 -g -o $@ $^
@@ -24,6 +24,8 @@ stringtable.o: stringtable.c stringtable.h
 lexer.o: lexer.c lexer.h symbols.h stringtable.h
 	gcc -g -c -o $@ $<
 
+test_parser.o: test_parser.c lexer.h stringtable.h symbols.h parser.h
+	gcc -g -c -o $@ $<
 
 test_symbols.o: test_symbols.c
 	gcc -g -c -o $@ $<
@@ -34,6 +36,8 @@ test_stringtable.o: test_stringtable.c stringtable.h
 test_lexer.o: test_lexer.c lexer.h
 	gcc -g -c -o $@ $<
 
+test_parser: test_parser.o lexer.o stringtable.o symbols.o parser.o
+	gcc -g -o $@ $^
 
 test_symbols: test_symbols.o symbols.o
 	gcc -g -o $@ $^
