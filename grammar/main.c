@@ -44,78 +44,38 @@ void loadInput(char *fileName){
 	fclose(f);
 }
 
-void printTermList(struct term_list *tl){
-	int symbolIndex;
-	int stringIndex;
-	char *string;
+void printParserOutput(){
+	int i, j;
+	int ruleName = -1;
+	struct term *body;
 
-	if(tl == NULL){
-		fprintf(stderr, "unexpected NULL in printTermList()\n");
-		exit(1);
-	}
+	for(i = 0; i < ruleCount; i++){
+		if(i == 0){
+			ruleName = rules[i].nonterminalIndex;
+			printf("<%s>\n", strings[nonterminals[ruleName]]);
+			printf("\t:");
+		} else if(ruleName != rules[i].nonterminalIndex){
+			ruleName = rules[i].nonterminalIndex;
+			printf("\t;\n\n");
+			printf("<%s>\n", strings[nonterminals[ruleName]]);
+			printf("\t:");
+		} else {
+			printf("\t|");
+		}
 
-	symbolIndex = tl->termSymbol;
-	stringIndex = symbolList[symbolIndex].string;
-	string = strings[stringIndex];
-
-	if(symbolList[symbolIndex].type == SYMTYPE_NONTERMINAL){
-		printf(" <%s>", string);
-	} else {
-		printf(" \"%s\"", string);
-	}
-
-	if(tl->nextTermList != NULL){
-		printTermList(tl->nextTermList);
-	} else {
+		body = rules[i].body;
+		for(j = 0; j < rules[i].bodyLength; j++){
+			if(body[j].type == TERMTYPE_TERMINAL){
+				printf(" \"%s\"", strings[terminals[body[j].index]]);
+			} else if(body[j].type == TERMTYPE_NONTERMINAL){
+				printf(" <%s>", strings[nonterminals[body[j].index]]);
+			} else {
+				printf(" ???");
+			}
+		}
 		printf("\n");
 	}
-}
-
-void printRuleList(struct rule_list *rl, int count){
-	if(rl == NULL){
-		fprintf(stderr, "unexpeded NULL in printRuleList()\n");
-		exit(1);
-	}
-	if(count == 0){
-		printf("\t:");
-	} else {
-		printf("\t|");
-	}
-	printTermList(rl->termList);
-	if(rl->nextRuleList != NULL){
-		printRuleList(rl->nextRuleList, count+1);
-	} else {
-		printf("\t;\n\n");
-	}
-}
-
-void printRuleSet(struct rule_set *rs){
-	int symbolIndex;
-	int stringIndex;
-	char *string;
-
-	if(rs == NULL){
-		fprintf(stderr, "unexpeded NULL in printRuleSet()\n");
-		exit(1);
-	}
-
-	symbolIndex = rs->ruleNameSymbol;
-	stringIndex = symbolList[symbolIndex].string;
-	string = strings[stringIndex];
-	printf("<%s>\n", string);
-
-	printRuleList(rs->ruleList, 0);
-
-	if(rs->nextRuleSet == NULL){
-		return;
-	} else {
-		printRuleSet(rs->nextRuleSet);
-		return;
-	}
-}
-
-void printParseTree(){
-	printRuleSet(parseTree);
+	printf("\t;\n");
 }
 
 void printFFSet(struct ff_set_node *n){
@@ -164,7 +124,7 @@ void printFirstFollow(){
 int main(int argc, char *argv[]){
 	int result;
 	char *fileName = "grammar.txt";
-	fileName = "grammar_3_12.txt";
+	//fileName = "grammar_3_12.txt";
 
 	loadInput(fileName);
 	result = tokenize();
@@ -179,10 +139,10 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
-	printParseTree();
+	printParserOutput();
 
 	firstfollow();
-	printFirstFollow();
+	//printFirstFollow();
 
 	return 0;
 }
