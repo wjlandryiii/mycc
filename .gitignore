@@ -8,4 +8,5 @@ grammar/grammar
 grammar/test_symbols
 grammar/test_stringtable
 grammar/test_lexer
+grammar/test_parser
 grammar/main
