@@ -36,6 +36,7 @@ void test_parser(){
 	result = parse();
 	if(result != 0){
 		printf("parser error: %d\n", parserErrorNumber);
+		exit(1);
 	}
 
 	if(ruleCount != 6){
@@ -61,7 +62,7 @@ void print_parser_results(){
 			printf("\t");
 		}
 		body = rules[i].body;
-		printf(":");
+		printf(": (%d): ", rules[i].bodyLength);
 		for(j = 0; j < rules[i].bodyLength; j++){
 			if(body[j].type == TERMTYPE_TERMINAL){
 				index = body[j].index;

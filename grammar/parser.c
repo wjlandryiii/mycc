@@ -6,33 +6,8 @@
 #include "symbols.h"
 #include "parser.h"
 
+#include <stdio.h>
 #include <stdlib.h>
-
-struct rule_set;
-struct rule_list;
-struct term_list;
-
-struct rule_set {
-	int ruleNameSymbol;
-	struct rule_list *ruleList;
-	struct rule_set *nextRuleSet;
-};
-
-struct rule_list {
-	struct term_list *termList;
-	struct rule_list *nextRuleList;
-};
-
-struct term_list {
-	int termSymbol;
-	struct term_list *nextTermList;
-};
-
-
-extern struct rule_set *parseTree;
-
-// TODO: stop from .h file
-
 
 static struct term terms[1024];
 int termCount;
@@ -46,14 +21,14 @@ struct rule_set *parseTree = 0;
 
 static int tokenIndex;
 
-static struct term_list *termList(struct term **termListOut, int *lengthOut){
-	struct term_list *tl = malloc(sizeof(struct term_list));
+
+static int termList(struct term **termListOut, int *lengthOut){
+	int result;
 	struct term *t = 0;
 
 	if(tokenStream[tokenIndex].name == TOKNAME_TERMINAL
 			|| tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL
 			|| tokenStream[tokenIndex].name == TOKNAME_SIGMA){
-		tl->termSymbol = tokenStream[tokenIndex].symbol;
 
 		if(tokenStream[tokenIndex].name != TOKNAME_SIGMA){
 			if(termCount >= sizeof(terms)/sizeof(*terms)){
@@ -74,102 +49,118 @@ static struct term_list *termList(struct term **termListOut, int *lengthOut){
 
 		if(tokenStream[tokenIndex].name == TOKNAME_TERMINAL
 				|| tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL){
-			tl->nextTermList = termList(termListOut, lengthOut);
+			result = termList(termListOut, lengthOut);
 			if(t){
-				*termListOut = t;
 				*lengthOut = *lengthOut + 1;
+				*termListOut = t;
 			}
-			return tl;
+			if(result){
+				return result;
+			}
+			return 0;
 		} else {
 			if(t){
 				*lengthOut = 1;
 				*termListOut = t;
+			} else {
+				*lengthOut = 0;
+				*termListOut = 0;
 			}
-			tl->nextTermList = 0;
-			return tl;
+			return 0;
 		}
 	} else {
 		parserErrorNumber = PARSERR_EXPECTED_TERMINAL_NONTERMINAL;
-		return 0;
+		return -1;
 	}
 }
 
-static struct rule_list *ruleList(int nonterminalIndex){
-	struct rule_list *rl = malloc(sizeof(struct rule_list));
+static int ruleList(int nonterminalIndex){
 	struct term *t = 0;
 	struct rule *r = 0;
 	int length;
+	int result;
 
 
 	if(ruleCount >= sizeof(rules)/sizeof(*rules)){
 		// TODO: parser error
-		return 0;
+		return -1;
 	}
 	r = &rules[ruleCount++];
 	r->nonterminalIndex = nonterminalIndex;
 
-	rl->termList = termList(&t, &length);
+	result = termList(&t, &length);
+	if(result){
+		return result;
+	}
 	r->bodyLength = length;
 	r->body = t;
 
 	if(tokenStream[tokenIndex].name == TOKNAME_PIPE){
 		tokenIndex++;
-		rl->nextRuleList = ruleList(nonterminalIndex);
-		return rl;
+		result = ruleList(nonterminalIndex);
+		if(result){
+			return result;
+		}
+		return 0;
 	} else {
-		rl->nextRuleList = 0;
-		return rl;
+		return 0;
 	}
 }
 
-static struct rule_set *ruleSet(){
-	struct rule_set *rs = malloc(sizeof(struct rule_set));
+static int ruleSet(){
+	int result;
 	int nonterminalIndex = -1;
 
 	if(tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL){
-		rs->ruleNameSymbol = tokenStream[tokenIndex].symbol;
 		nonterminalIndex = tokenStream[tokenIndex].nonterminalIndex;
 		tokenIndex++;
 
 		if(tokenStream[tokenIndex].name == TOKNAME_COLON){
 			tokenIndex++;
-			rs->ruleList = ruleList(nonterminalIndex);
+			result = ruleList(nonterminalIndex);
+			if(result){
+				return result;
+			}
 
 			if(tokenStream[tokenIndex].name == TOKNAME_SEMICOLON){
 				tokenIndex++;
 
 				if(tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL){
-					rs->nextRuleSet = ruleSet();
-					return rs;
+					//rs->nextRuleSet = ruleSet();
+					return ruleSet();
 				} else {
-					rs->nextRuleSet = NULL;
-					return rs;
+					//rs->nextRuleSet = NULL;
+					return 0;
 				}
 			} else {
 				parserErrorNumber = PARSERR_EXPECTED_SEMICOLON;
-				return 0;
+				return -1;
 			}
 
 		} else {
 			parserErrorNumber = PARSERR_EXPECTED_COLON;
-			return 0;
+			return -1;
 		}
 	} else {
 		parserErrorNumber = PARSERR_EXPECTED_NONTERMINAL;
-		return 0;
+		return -1;
 	}
 }
 
 int parse(void){
-	struct rule_set *root;
+	int result;
 
 	tokenIndex = 0;
-	root = ruleSet();
+	result = ruleSet();
+	if(result){
+		printf("Token Index: %d\n", tokenIndex);
+		return result;
+	}
 
 	if(tokenStream[tokenIndex].name == TOKNAME_EOF){
-		parseTree = root;
 		return 0;
 	} else {
+		// TODO: parser error
 		return -1;
 	}
 }
