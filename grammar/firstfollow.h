@@ -6,8 +6,8 @@
 #define FIRSTFOLLOW_H
 
 // INPUT
-#define MAX_SYMBOLS (128)
-#define MAX_RULES (128)
+#define MAX_SYMBOLS (256)
+#define MAX_RULES (256)
 #define MAX_RULE_SIZE (128)
 
 #define TYPE_TERMINAL (1)

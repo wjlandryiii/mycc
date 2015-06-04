@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "stringtable.h"
 #include "symbols.h"
@@ -77,54 +78,90 @@ void printParserOutput(){
 	}
 	printf("\t;\n");
 }
-/*
-void printFFSet(struct ff_set_node *n){
-	if(n != NULL){
-		while(n){
-			int symbolIndex;
-			int stringIndex;
-			char *string;
 
-			symbolIndex = n->symbolIndex;
-			stringIndex = terminals[symbolIndex];
-			string = strings[stringIndex];
-			printf(" \"%s\"", string);
-			n = n->next;
+void loadFirstFollowInput(){
+	int i,j;
+
+	for(i = 0; i < nonterminalCount; i++){
+		assert(nSYMBOLS < MAX_SYMBOLS);
+		SYMBOL[nSYMBOLS] = nonterminals[i];
+		SYMBOLTYPE[nSYMBOLS] = TYPE_NONTERMINAL;
+		nSYMBOLS += 1;
+	}
+	for(i = 0; i < terminalCount; i++){
+		assert(nSYMBOLS < MAX_SYMBOLS);
+		SYMBOL[nSYMBOLS] = terminals[i];
+		SYMBOLTYPE[nSYMBOLS] = TYPE_TERMINAL;
+		nSYMBOLS += 1;
+	}
+
+	for(i = 0; i < ruleCount; i++){
+		assert(nRULES < MAX_RULES);
+		RULENAME[nRULES] = rules[i].nonterminalIndex;
+		for(j = 0; j < rules[i].bodyLength; j++){
+			assert(j < MAX_RULE_SIZE);
+			if(rules[i].body[j].type == TERMTYPE_NONTERMINAL){
+				RULE[nRULES][RULESIZE[nRULES]] = rules[i].body[j].index;
+			} else if(rules[i].body[j].type == TERMTYPE_TERMINAL){
+				RULE[nRULES][RULESIZE[nRULES]] = rules[i].body[j].index + nonterminalCount;
+			} else {
+				printf("type: %d\n", rules[i].body[j].type);
+				fflush(stdout);
+				assert(0);
+			}
+			RULESIZE[nRULES] += 1;
+		}
+		nRULES += 1;
+	}
+}
+
+void printFirstFollowInput(){
+	int i,j;
+
+	for(i = 0; i < nSYMBOLS; i++){
+		printf("%d:%d: %s\n", i, SYMBOL[i], strings[SYMBOL[i]]);
+	}
+	printf("\n");
+
+	for(i = 0; i < nRULES; i++){
+		printf("%2d: %s(%d) ->  ", i, strings[SYMBOL[RULENAME[i]]], SYMBOL[RULENAME[i]]);
+		for(j = 0; j < RULESIZE[i]; j++){
+			printf(" %s", strings[SYMBOL[RULE[i][j]]]);
 		}
 		printf("\n");
-	} else {
-		printf(" (empty)\n");
 	}
-}
-*/
-/*
-void printFFSet(struct ff_set *s){
-	printf(" N/A\n");
+	printf("\n");
 }
 
-void printFirstFollow(){
-	int i;
-	int symbolIndex;
-	int stringIndex;
-	char *string;
 
-	for(i = 0; i < ffNodeCount; i++){
-		struct ff_node *n = &ffNodes[i];
+void printFirstFollowOutput(){
+	int i, j;
 
-		symbolIndex = n->nonterminal;
-		stringIndex = nonterminals[symbolIndex];
-		string = strings[stringIndex];
-		printf("%s\n", string);
-		printf("\tNullable  : %s\n", n->isNullable ? "YES" : "NO");
-		printf("\tFIRST SET :");
-		printFFSet(&n->firstSet);
-		printf("\tFOLLOW SET:");
-		printFFSet(&n->followSet);
+	for(i = 0; i < nSYMBOLS; i++){
+		printf("NULLABLE(%s) => %s\n", strings[SYMBOL[i]], NULLABLE[i] ? "YES" : "NO");
+	}
 
+	printf("\n");
+
+	for(i = 0; i < nSYMBOLS; i++){
+		printf("FIRST(%s) => ", strings[SYMBOL[i]]);
+		for(j = 0; j < FIRSTSIZE[i]; j++){
+			printf(" %s", strings[SYMBOL[FIRST[i][j]]]);
+		}
 		printf("\n");
 	}
+	
+	printf("\n");
+	
+	for(i = 0; i < nSYMBOLS; i++){
+		printf("FOLLOW(%s) => ", strings[SYMBOL[i]]);
+		for(j = 0; j < FOLLOWSIZE[i]; j++){
+			printf(" %s", strings[SYMBOL[FOLLOW[i][j]]]);
+		}
+		printf("\n");
+	}
+	printf("\n");
 }
-*/
 
 int main(int argc, char *argv[]){
 	int result;
@@ -146,8 +183,12 @@ int main(int argc, char *argv[]){
 
 	//printParserOutput();
 
-	//firstfollow();
-	//printFirstFollow();
+	loadFirstFollowInput();
+	printFirstFollowInput();
+	computeNullable();
+	computeFirst();
+	computeFollow();
+	printFirstFollowOutput();
 
 	return 0;
 }

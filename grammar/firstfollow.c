@@ -45,7 +45,7 @@ void computeNullable(){
 	iteration = 1;
 	changed = 1;
 	while(changed){
-		printf("    *** ITERATION: %d ***\n", iteration);
+		//printf("    *** ITERATION: %d ***\n", iteration);
 		changed = 0;
 		for(rule = 0; rule < nRULES; rule++){
 			if(NULLABLE[RULENAME[rule]] == 0){
@@ -62,7 +62,7 @@ void computeNullable(){
 		}
 		iteration += 1;
 	}
-	printf("\n");
+	//printf("\n");
 }
 
 static int unionFirst(int dst, int src){
@@ -93,11 +93,11 @@ void computeFirst(){
 	int iteration = 1;
 
 	do {
-		printf("    *** ITERATION: %d ***\n", iteration);
+		//printf("    *** ITERATION: %d ***\n", iteration);
 		changed = 0;
 
 		for(rule = 0; rule < nRULES; rule++){
-			printf("RULE: %d\n", rule);
+			//printf("RULE: %d\n", rule);
 			for(i = 0; i < RULESIZE[rule]; i++){
 				if(unionFirst(RULENAME[rule], RULE[rule][i])){
 					changed = 1;
@@ -163,13 +163,13 @@ void computeFollow(){
 	int iteration = 1;
 
 	do {
-		printf("    *** ITERATION: %d ***\n", iteration);
+		//printf("    *** ITERATION: %d ***\n", iteration);
 		changed = 0;
 
 		for(rule = 0; rule < nRULES; rule++){
 
 			for(i = RULESIZE[rule] - 1; i >= 0; i--){
-				printf("RULE: %d I: %d size: %d\n", rule, i, RULESIZE[rule]);
+				//printf("RULE: %d I: %d size: %d\n", rule, i, RULESIZE[rule]);
 				if(unionFollow(RULE[rule][i], RULENAME[rule])){
 					changed = 1;
 				}
