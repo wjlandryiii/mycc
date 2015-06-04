@@ -1,10 +1,7 @@
 /*
- *	 Copyright 2015 Joseph Landry All Rights Reserved
+ * Copyright 2015 Joseph Landry All Rights Reserved
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 
 #include "symbols.h"
@@ -12,21 +9,6 @@
 #include "firstfollow.h"
 
 
-// INPUT
-/*
-int nSYMBOLS = 0;
-int SYMBOL[MAX_SYMBOLS];
-int SYMBOLTYPE[MAX_SYMBOLS];
-*/
-
-/*
-int nRULES = 0;
-int RULENAME[MAX_RULES];
-int RULE[MAX_RULES][MAX_RULE_SIZE];
-int RULESIZE[MAX_RULES];
-*/
-
-// OUTPUT
 int NULLABLE[MAX_SYMBOLS];
 
 int FIRST[MAX_SYMBOLS][MAX_FIRST_SET_SIZE];
@@ -36,7 +18,7 @@ int FOLLOW[MAX_SYMBOLS][MAX_FOLLOW_SET_SIZE];
 int FOLLOWSIZE[MAX_SYMBOLS];
 
 
-void computeNullable(){
+static void computeNullable(){
 	int rule, i, j;
 	int changed;
 	int iteration;
@@ -51,7 +33,6 @@ void computeNullable(){
 	iteration = 1;
 	changed = 1;
 	while(changed){
-		//printf("    *** ITERATION: %d ***\n", iteration);
 		changed = 0;
 		for(rule = 0; rule < nRULES; rule++){
 			if(NULLABLE[RULENAME[rule]] == 0){
@@ -68,7 +49,6 @@ void computeNullable(){
 		}
 		iteration += 1;
 	}
-	//printf("\n");
 }
 
 static int unionFirst(int dst, int src){
@@ -93,17 +73,15 @@ static int unionFirst(int dst, int src){
 	return changed;
 }
 
-void computeFirst(){
+static void computeFirst(){
 	int rule, i, j;
 	int changed;
 	int iteration = 1;
 
 	do {
-		//printf("    *** ITERATION: %d ***\n", iteration);
 		changed = 0;
 
 		for(rule = 0; rule < nRULES; rule++){
-			//printf("RULE: %d\n", rule);
 			for(i = 0; i < RULESIZE[rule]; i++){
 				if(unionFirst(RULENAME[rule], RULE[rule][i])){
 					changed = 1;
@@ -163,19 +141,16 @@ static int unionFollowFirst(int dst, int src){
 	return changed;
 }
 
-void computeFollow(){
+static void computeFollow(){
 	int rule, i, j;
 	int changed;
 	int iteration = 1;
 
 	do {
-		//printf("    *** ITERATION: %d ***\n", iteration);
 		changed = 0;
 
 		for(rule = 0; rule < nRULES; rule++){
-
 			for(i = RULESIZE[rule] - 1; i >= 0; i--){
-				//printf("RULE: %d I: %d size: %d\n", rule, i, RULESIZE[rule]);
 				if(unionFollow(RULE[rule][i], RULENAME[rule])){
 					changed = 1;
 				}
@@ -183,7 +158,6 @@ void computeFollow(){
 					break;
 				}
 			}
-
 
 			for(i = 0; i < RULESIZE[rule]; i++){
 				for(j = i+1; j < RULESIZE[rule]; j++){
@@ -199,3 +173,9 @@ void computeFollow(){
 	} while(changed);
 }
 
+int firstfollow(){
+	computeNullable();
+	computeFirst();
+	computeFollow();
+	return 0;
+}

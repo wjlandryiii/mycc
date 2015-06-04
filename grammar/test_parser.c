@@ -27,7 +27,7 @@ void test_parser(){
 		"	;\n"
 		"\n";
 	int result;
-	strcpy(lexerInputBuffer, grammar);
+	strcpy(INPUTSTRING, grammar);
 	result = tokenize();
 	if(result != 0){
 		printf("lexer error: %d\n", parserErrorNumber);
@@ -39,60 +39,19 @@ void test_parser(){
 		exit(1);
 	}
 
-	if(ruleCount != 6){
-		printf("Invalid rule count: %d\n", ruleCount);
+	if(nRULES != 6){
+		printf("Invalid rule count: %d\n", nRULES);
 		exit(1);
 	}
 }
 
-void print_parser_results(){
-	int i, j;
-	int nonterminalIndex = -1;
-	struct term *body;
-	int index;
-	char *string;
-
-	for(i = 0; i < ruleCount; i++){
-		if(nonterminalIndex != rules[i].nonterminalIndex){
-			nonterminalIndex = rules[i].nonterminalIndex;
-			int stringIndex = nonterminals[nonterminalIndex];
-			char *string = strings[stringIndex];
-			printf("<%s>\n\t", string);
-		} else {
-			printf("\t");
-		}
-		body = rules[i].body;
-		printf(": (%d): ", rules[i].bodyLength);
-		for(j = 0; j < rules[i].bodyLength; j++){
-			if(body[j].type == TERMTYPE_TERMINAL){
-				index = body[j].index;
-				index = terminals[index];
-				string = strings[index];
-				printf(" '%s'", string);
-			} else if(body[j].type == TERMTYPE_NONTERMINAL){
-				index = body[j].index;
-				index = nonterminals[index];
-				string = strings[index];
-				printf(" '%s'", string);
-			} else {
-				printf("INVALID TYPE: %d\n", body[j].type);
-				return;
-			}
-		}
-		if(rules[i].bodyLength == 0){
-			printf(" ''");
-		}
-		printf("\n");
-	}
-	printf("\n");
-}
 
 void printParserOutput(){
 	int i, j;
 	for(i = 0; i < nRULES; i++){
-		printf("%s: (%d items) ", strings[SYMBOL[RULENAME[i]]], RULESIZE[i]);
+		printf("%s: (%d items) ", STRING[SYMBOL[RULENAME[i]]], RULESIZE[i]);
 		for(j = 0; j < RULESIZE[i]; j++){
-			printf(" %s", strings[SYMBOL[RULE[i][j]]]);
+			printf(" %s", STRING[SYMBOL[RULE[i][j]]]);
 		}
 		printf("\n");
 	}
@@ -102,7 +61,6 @@ void printParserOutput(){
 
 int main(int argc, char *argv[]){
 	test_parser();
-	print_parser_results();
 	printParserOutput();
 	return 0;
 }

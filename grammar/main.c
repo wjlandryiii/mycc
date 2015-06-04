@@ -31,26 +31,27 @@ void loadInput(char *fileName){
 	}
 	fseek(f, 0, SEEK_SET);
 
-	if(fileSize >= sizeof(lexerInputBuffer) - 1){
+	if(fileSize >= sizeof(INPUTSTRING) - 1){
 		fprintf(stderr, "File size too big: %ld bytes\n", fileSize);
 		exit(1);
 	}
 
-	if(fread(lexerInputBuffer, 1, fileSize, f) != fileSize){
+	if(fread(INPUTSTRING, 1, fileSize, f) != fileSize){
 		fprintf(stderr, "Error reading file\n");
 		exit(1);
 	}
 
-	lexerInputBuffer[fileSize] = '\0';
+	INPUTSTRING[fileSize] = '\0';
 	fclose(f);
 }
 
+/*
 void printParserOutput(){
 	int i, j;
 	int ruleName = -1;
 	struct term *body;
 
-	for(i = 0; i < ruleCount; i++){
+	for(i = 0; i < nRULES; i++){
 		if(i == 0){
 			ruleName = rules[i].nonterminalIndex;
 			printf("<%s>\n", strings[nonterminals[ruleName]]);
@@ -78,7 +79,9 @@ void printParserOutput(){
 	}
 	printf("\t;\n");
 }
+*/
 
+/*
 void loadFirstFollowInput(){
 	int i,j;
 
@@ -114,19 +117,20 @@ void loadFirstFollowInput(){
 		nRULES += 1;
 	}
 }
+*/
 
 void printFirstFollowInput(){
 	int i,j;
 
 	for(i = 0; i < nSYMBOLS; i++){
-		printf("%d:%d: %s\n", i, SYMBOL[i], strings[SYMBOL[i]]);
+		printf("%d:%d: %s\n", i, SYMBOL[i], STRING[SYMBOL[i]]);
 	}
 	printf("\n");
 
 	for(i = 0; i < nRULES; i++){
-		printf("%2d: %s(%d) ->  ", i, strings[SYMBOL[RULENAME[i]]], SYMBOL[RULENAME[i]]);
+		printf("%2d: %s(%d) ->  ", i, STRING[SYMBOL[RULENAME[i]]], SYMBOL[RULENAME[i]]);
 		for(j = 0; j < RULESIZE[i]; j++){
-			printf(" %s:%d", strings[SYMBOL[RULE[i][j]]], SYMBOL[RULE[i][j]]);
+			printf(" %s:%d", STRING[SYMBOL[RULE[i][j]]], SYMBOL[RULE[i][j]]);
 		}
 		printf("\n");
 	}
@@ -138,15 +142,15 @@ void printFirstFollowOutput(){
 	int i, j;
 
 	for(i = 0; i < nSYMBOLS; i++){
-		printf("NULLABLE(%s) => %s\n", strings[SYMBOL[i]], NULLABLE[i] ? "YES" : "NO");
+		printf("NULLABLE(%s) => %s\n", STRING[SYMBOL[i]], NULLABLE[i] ? "YES" : "NO");
 	}
 
 	printf("\n");
 
 	for(i = 0; i < nSYMBOLS; i++){
-		printf("FIRST(%s) => ", strings[SYMBOL[i]]);
+		printf("FIRST(%s) => ", STRING[SYMBOL[i]]);
 		for(j = 0; j < FIRSTSIZE[i]; j++){
-			printf(" %s:%d", strings[SYMBOL[FIRST[i][j]]], SYMBOL[FIRST[i][j]]);
+			printf(" %s:%d", STRING[SYMBOL[FIRST[i][j]]], SYMBOL[FIRST[i][j]]);
 		}
 		printf("\n");
 	}
@@ -154,9 +158,9 @@ void printFirstFollowOutput(){
 	printf("\n");
 	
 	for(i = 0; i < nSYMBOLS; i++){
-		printf("FOLLOW(%s) => ", strings[SYMBOL[i]]);
+		printf("FOLLOW(%s) => ", STRING[SYMBOL[i]]);
 		for(j = 0; j < FOLLOWSIZE[i]; j++){
-			printf(" %s:%d", strings[SYMBOL[FOLLOW[i][j]]], SYMBOL[FOLLOW[i][j]]);
+			printf(" %s:%d", STRING[SYMBOL[FOLLOW[i][j]]], SYMBOL[FOLLOW[i][j]]);
 		}
 		printf("\n");
 	}
@@ -186,9 +190,7 @@ int main(int argc, char *argv[]){
 	//loadFirstFollowInput();
 	printf("***********   INPUT   **********\n");
 	printFirstFollowInput();
-	computeNullable();
-	computeFirst();
-	computeFollow();
+	firstfollow();
 	printf("***********   OUTPUT   **********\n");
 	printFirstFollowOutput();
 

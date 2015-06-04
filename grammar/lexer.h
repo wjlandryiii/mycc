@@ -18,6 +18,12 @@ enum TOK_NAMES {
 	TOKNAME_EOF,
 };
 
+extern char INPUTSTRING[16*1024];
+
+extern int nTOKENS;
+extern int TOKENNAME[MAX_TOKENS];
+extern int TOKENVALUE[MAX_TOKENS];
+
 enum LEX_ERRORS {
 	LEXERR_OK = 0,
 	LEXERR_INPUT,
@@ -26,23 +32,8 @@ enum LEX_ERRORS {
 	LEXERR_SYMBOLTOOLONG,
 	LEXERR_STARTCHAR,
 };
-
-struct token {
-	int name;
-	int symbol;
-	int terminalIndex;
-	int nonterminalIndex;
-};
-
-extern char lexerInputBuffer[16*1024];
-extern struct token tokenStream[1024];
-extern int tokenStreamLength;
 extern int lexerErrorNumber;
 extern int lexerErrorLineNumber;
-
-extern int nTOKENS;
-extern int TOKENNAME[MAX_TOKENS];
-extern int TOKENVALUE[MAX_TOKENS];
 
 int tokenize(void);
 

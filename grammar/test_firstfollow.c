@@ -210,12 +210,8 @@ int main(int argc, char *argv[]){
 	loadInput_3_15();
 	printf("*********** INPUT **************\n");
 	printInput();
-	printf("*********** COMPUTE NULLABLE **************\n");
-	computeNullable();
-	printf("*********** COMPUTE FIRST **************\n");
-	computeFirst();
-	printf("*********** COMPUTE FOLLOW **************\n");
-	computeFollow();
+	printf("*********** COMPUTE  **************\n");
+	firstfollow();
 	printf("*********** OUTPUT **************\n");
 	printOutput();
 	return 0;

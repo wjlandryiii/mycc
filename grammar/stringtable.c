@@ -10,8 +10,8 @@
 static char stringBuf[16*1024];
 static int bytesUsed = 1;
 
-char *strings[1024] = {stringBuf, 0};
-int stringCount = 1;
+char *STRING[1024] = {stringBuf, 0};
+int nSTRINGS = 1;
 
 
 static char *appendString(char *s){
@@ -32,15 +32,15 @@ static char *appendString(char *s){
 static int lookupString(char *s){
 	int i;
 
-	for(i = 0; i < stringCount; i++){
-		if(strcmp(strings[i], s) == 0){
+	for(i = 0; i < nSTRINGS; i++){
+		if(strcmp(STRING[i], s) == 0){
 			return i;
 		}
 	}
 	return -1;
 }
 
-int stringtableAddString(char *s){
+int insertString(char *s){
 	char *p;
 	int i;
 
@@ -48,8 +48,8 @@ int stringtableAddString(char *s){
 	if(i < 0){
 		p = appendString(s);
 		if(p){
-			strings[stringCount] = p;
-			return stringCount++;
+			STRING[nSTRINGS] = p;
+			return nSTRINGS++;
 		} else {
 			return -1;
 		}

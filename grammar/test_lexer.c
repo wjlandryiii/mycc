@@ -13,15 +13,11 @@
 void test_lexer(char *s, int name){
 	int result;
 
-	strcpy(lexerInputBuffer, s);
+	strcpy(INPUTSTRING, s);
 
 	result = tokenize();
 	if(result < 0){
 		printf("lexer error on string _%s_\n", s);
-		return;
-	}
-	if(tokenStreamLength <= 0 || tokenStream[0].name != name){
-		printf("lexer failed: _%s_\n", s);
 		return;
 	}
 	if(TOKENNAME[0] != name){

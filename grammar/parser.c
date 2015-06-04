@@ -17,44 +17,26 @@ int RULE[MAX_RULES][MAX_RULE_SIZE];
 int RULESIZE[MAX_RULES];
 
 
-static struct term terms[1024];
-int termCount;
-
-struct rule rules[256];
-int ruleCount;
 
 int parserErrorNumber = 0;
 
-struct rule_set *parseTree = 0;
 
 static int tokenIndex;
 
 
-static int termList(struct term **termListOut, int *lengthOut){
+static int termList(){
 	int result;
-	struct term *t = 0;
 
 	if(TOKENNAME[tokenIndex] == TOKNAME_TERMINAL
 			|| TOKENNAME[tokenIndex] == TOKNAME_NONTERMINAL
 			|| TOKENNAME[tokenIndex] == TOKNAME_SIGMA){
 
 		if(TOKENNAME[tokenIndex] != TOKNAME_SIGMA){
-			if(termCount >= sizeof(terms)/sizeof(*terms)){
-				// TODO: set parse error
-				return 0;
-			}
-			t = &terms[termCount++];
 			if(TOKENNAME[tokenIndex] == TOKNAME_TERMINAL){
-				t->type = TERMTYPE_TERMINAL;
-				t->index = tokenStream[tokenIndex].terminalIndex;
-
 				assert(RULESIZE[nRULES] < MAX_RULE_SIZE);
 				RULE[nRULES][RULESIZE[nRULES]] = TOKENVALUE[tokenIndex];
 				RULESIZE[nRULES]++;
 			} else if(TOKENNAME[tokenIndex] == TOKNAME_NONTERMINAL){
-				t->type = TERMTYPE_NONTERMINAL;
-				t->index = tokenStream[tokenIndex].nonterminalIndex;
-
 				assert(RULESIZE[nRULES] < MAX_RULE_SIZE);
 				RULE[nRULES][RULESIZE[nRULES]] = TOKENVALUE[tokenIndex];
 				RULESIZE[nRULES]++;
@@ -65,23 +47,12 @@ static int termList(struct term **termListOut, int *lengthOut){
 
 		if(TOKENNAME[tokenIndex] == TOKNAME_TERMINAL
 				|| TOKENNAME[tokenIndex]== TOKNAME_NONTERMINAL){
-			result = termList(termListOut, lengthOut);
-			if(t){
-				*lengthOut = *lengthOut + 1;
-				*termListOut = t;
-			}
+			result = termList();
 			if(result){
 				return result;
 			}
 			return 0;
 		} else {
-			if(t){
-				*lengthOut = 1;
-				*termListOut = t;
-			} else {
-				*lengthOut = 0;
-				*termListOut = 0;
-			}
 			return 0;
 		}
 	} else {
@@ -90,9 +61,7 @@ static int termList(struct term **termListOut, int *lengthOut){
 	}
 }
 
-static int ruleList(int nonterminalIndex, int symbolIndex){
-	struct term *t = 0;
-	struct rule *r = 0;
+static int ruleList(int symbolIndex){
 	int length;
 	int result;
 
@@ -100,26 +69,16 @@ static int ruleList(int nonterminalIndex, int symbolIndex){
 	RULENAME[nRULES] = symbolIndex;
 
 
-	if(ruleCount >= sizeof(rules)/sizeof(*rules)){
-		// TODO: parser error
-		return -1;
-	}
-	r = &rules[ruleCount++];
-	r->nonterminalIndex = nonterminalIndex;
-
-	result = termList(&t, &length);
-	RULESIZE[nRULES] = length;
+	result = termList();
 	nRULES += 1;
 
 	if(result){
 		return result;
 	}
-	r->bodyLength = length;
-	r->body = t;
 
 	if(TOKENNAME[tokenIndex] == TOKNAME_PIPE){
 		tokenIndex++;
-		result = ruleList(nonterminalIndex, symbolIndex);
+		result = ruleList(symbolIndex);
 		if(result){
 			return result;
 		}
@@ -131,17 +90,15 @@ static int ruleList(int nonterminalIndex, int symbolIndex){
 
 static int ruleSet(){
 	int result;
-	int nonterminalIndex = -1;
 	int symbolIndex;
 
 	if(TOKENNAME[tokenIndex] == TOKNAME_NONTERMINAL){
-		nonterminalIndex = tokenStream[tokenIndex].nonterminalIndex;
 		symbolIndex = TOKENVALUE[tokenIndex];
 		tokenIndex++;
 
 		if(TOKENNAME[tokenIndex] == TOKNAME_COLON){
 			tokenIndex++;
-			result = ruleList(nonterminalIndex, symbolIndex);
+			result = ruleList(symbolIndex);
 			if(result){
 				return result;
 			}
@@ -150,10 +107,8 @@ static int ruleSet(){
 				tokenIndex++;
 
 				if(TOKENNAME[tokenIndex] == TOKNAME_NONTERMINAL){
-					//rs->nextRuleSet = ruleSet();
 					return ruleSet();
 				} else {
-					//rs->nextRuleSet = NULL;
 					return 0;
 				}
 			} else {

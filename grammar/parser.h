@@ -12,28 +12,6 @@ extern int RULENAME[MAX_RULES];
 extern int RULE[MAX_RULES][MAX_RULE_SIZE];
 extern int RULESIZE[MAX_RULES];
 
-
-
-enum PARSER_TERMTYPES{
-	TERMTYPE_UNKNOWN = 0,
-	TERMTYPE_TERMINAL,
-	TERMTYPE_NONTERMINAL,
-};
-
-struct term {
-	int type;
-	int index;
-};
-
-struct rule {
-	int nonterminalIndex;
-	int bodyLength;
-	struct term *body;
-};
-
-extern struct rule rules[256];
-extern int ruleCount;
-
 enum PARSER_ERRORS {
 	PARSERR_EXPECTED_NONTERMINAL,
 	PARSERR_EXPECTED_TERMINAL,
@@ -44,6 +22,5 @@ enum PARSER_ERRORS {
 extern int parserErrorNumber;
 
 int parse(void);
-
 
 #endif

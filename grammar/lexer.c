@@ -11,10 +11,8 @@
 
 
 
-char lexerInputBuffer[1024*16];
-struct token tokenStream[1024];
+char INPUTSTRING[1024*16];
 
-int tokenStreamLength = 0;
 int tokenizerLineNumber;
 
 int lexerErrorNumber = LEXERR_OK;
@@ -145,9 +143,8 @@ int tokenize(void){
 	memset(TOKENNAME, 0, sizeof(TOKENNAME));
 	memset(TOKENVALUE, 0, sizeof(TOKENNAME));
 
-	tokenStreamLength = 0;
 	lexerErrorLineNumber = 1;
-	in = lexerInputBuffer;
+	in = INPUTSTRING;
 
 	while(name != TOKNAME_EOF){
 		terminalIndex = -1;
@@ -166,31 +163,16 @@ int tokenize(void){
 						buf[i] = in[i+1];
 					}
 					buf[i] = 0;
-					i = stringtableAddString(buf);
+					i = insertString(buf);
 					if(name == TOKNAME_TERMINAL){
-						symType = SYMTYPE_TERMINAL;
-						terminalIndex = insertTerminal(i);
 						symbol = insertSymbol(i, SYMBOLTYPE_TERMINAL);
 					} else if(name == TOKNAME_NONTERMINAL){
-						symType = SYMTYPE_NONTERMINAL;
 						symbol = insertSymbol(i, SYMBOLTYPE_NONTERMINAL);
-						nonterminalIndex = insertNonterminal(i);
 					} else {
 						assert(0);
 					}
-					i = setSymbol(i, symType);
-					tokenStream[tokenStreamLength].symbol = i;
 				}
-			} else if(name == TOKNAME_SIGMA){
-				tokenStream[tokenStreamLength].symbol = 0;
-			} else {
-				tokenStream[tokenStreamLength].symbol = -1;
 			}
-			tokenStream[tokenStreamLength].name = name;
-			tokenStream[tokenStreamLength].terminalIndex = terminalIndex;
-			tokenStream[tokenStreamLength].nonterminalIndex = nonterminalIndex;
-
-			tokenStreamLength++;
 			in += length;
 			
 			appendToken(name, symbol); 
