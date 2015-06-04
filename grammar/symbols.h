@@ -5,6 +5,8 @@
 #ifndef SYMBOLS_H
 #define SYMBOLS_H
 
+#include "defs.h"
+
 enum SYM_TYPE {
 	SYMTYPE_UNKNOWN = 0,
 	SYMTYPE_NONTERMINAL,
@@ -33,7 +35,8 @@ int insertTerminal(int stringIndex);
 int insertNonterminal(int stringIndex);
 
 
-#define MAX_SYMBOLS (1024)
+#define SYMBOLTYPE_TERMINAL (1)
+#define SYMBOLTYPE_NONTERMINAL (2)
 
 extern int nSYMBOLS;
 extern int SYMBOL[MAX_SYMBOLS];

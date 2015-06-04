@@ -8,6 +8,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
+
+
+int nRULES = 0;
+int RULENAME[MAX_RULES];
+int RULE[MAX_RULES][MAX_RULE_SIZE];
+int RULESIZE[MAX_RULES];
+
 
 static struct term terms[1024];
 int termCount;
@@ -26,29 +34,37 @@ static int termList(struct term **termListOut, int *lengthOut){
 	int result;
 	struct term *t = 0;
 
-	if(tokenStream[tokenIndex].name == TOKNAME_TERMINAL
-			|| tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL
-			|| tokenStream[tokenIndex].name == TOKNAME_SIGMA){
+	if(TOKENNAME[tokenIndex] == TOKNAME_TERMINAL
+			|| TOKENNAME[tokenIndex] == TOKNAME_NONTERMINAL
+			|| TOKENNAME[tokenIndex] == TOKNAME_SIGMA){
 
-		if(tokenStream[tokenIndex].name != TOKNAME_SIGMA){
+		if(TOKENNAME[tokenIndex] != TOKNAME_SIGMA){
 			if(termCount >= sizeof(terms)/sizeof(*terms)){
 				// TODO: set parse error
 				return 0;
 			}
 			t = &terms[termCount++];
-			if(tokenStream[tokenIndex].name == TOKNAME_TERMINAL){
+			if(TOKENNAME[tokenIndex] == TOKNAME_TERMINAL){
 				t->type = TERMTYPE_TERMINAL;
 				t->index = tokenStream[tokenIndex].terminalIndex;
-			} else if(tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL){
+
+				assert(RULESIZE[nRULES] < MAX_RULE_SIZE);
+				RULE[nRULES][RULESIZE[nRULES]] = TOKENVALUE[tokenIndex];
+				RULESIZE[nRULES]++;
+			} else if(TOKENNAME[tokenIndex] == TOKNAME_NONTERMINAL){
 				t->type = TERMTYPE_NONTERMINAL;
 				t->index = tokenStream[tokenIndex].nonterminalIndex;
+
+				assert(RULESIZE[nRULES] < MAX_RULE_SIZE);
+				RULE[nRULES][RULESIZE[nRULES]] = TOKENVALUE[tokenIndex];
+				RULESIZE[nRULES]++;
 			}
 		}
 
 		tokenIndex++;
 
-		if(tokenStream[tokenIndex].name == TOKNAME_TERMINAL
-				|| tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL){
+		if(TOKENNAME[tokenIndex] == TOKNAME_TERMINAL
+				|| TOKENNAME[tokenIndex]== TOKNAME_NONTERMINAL){
 			result = termList(termListOut, lengthOut);
 			if(t){
 				*lengthOut = *lengthOut + 1;
@@ -74,11 +90,14 @@ static int termList(struct term **termListOut, int *lengthOut){
 	}
 }
 
-static int ruleList(int nonterminalIndex){
+static int ruleList(int nonterminalIndex, int symbolIndex){
 	struct term *t = 0;
 	struct rule *r = 0;
 	int length;
 	int result;
+
+	assert(nRULES < MAX_RULES);
+	RULENAME[nRULES] = symbolIndex;
 
 
 	if(ruleCount >= sizeof(rules)/sizeof(*rules)){
@@ -89,15 +108,18 @@ static int ruleList(int nonterminalIndex){
 	r->nonterminalIndex = nonterminalIndex;
 
 	result = termList(&t, &length);
+	RULESIZE[nRULES] = length;
+	nRULES += 1;
+
 	if(result){
 		return result;
 	}
 	r->bodyLength = length;
 	r->body = t;
 
-	if(tokenStream[tokenIndex].name == TOKNAME_PIPE){
+	if(TOKENNAME[tokenIndex] == TOKNAME_PIPE){
 		tokenIndex++;
-		result = ruleList(nonterminalIndex);
+		result = ruleList(nonterminalIndex, symbolIndex);
 		if(result){
 			return result;
 		}
@@ -110,22 +132,24 @@ static int ruleList(int nonterminalIndex){
 static int ruleSet(){
 	int result;
 	int nonterminalIndex = -1;
+	int symbolIndex;
 
-	if(tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL){
+	if(TOKENNAME[tokenIndex] == TOKNAME_NONTERMINAL){
 		nonterminalIndex = tokenStream[tokenIndex].nonterminalIndex;
+		symbolIndex = TOKENVALUE[tokenIndex];
 		tokenIndex++;
 
-		if(tokenStream[tokenIndex].name == TOKNAME_COLON){
+		if(TOKENNAME[tokenIndex] == TOKNAME_COLON){
 			tokenIndex++;
-			result = ruleList(nonterminalIndex);
+			result = ruleList(nonterminalIndex, symbolIndex);
 			if(result){
 				return result;
 			}
 
-			if(tokenStream[tokenIndex].name == TOKNAME_SEMICOLON){
+			if(TOKENNAME[tokenIndex] == TOKNAME_SEMICOLON){
 				tokenIndex++;
 
-				if(tokenStream[tokenIndex].name == TOKNAME_NONTERMINAL){
+				if(TOKENNAME[tokenIndex] == TOKNAME_NONTERMINAL){
 					//rs->nextRuleSet = ruleSet();
 					return ruleSet();
 				} else {
@@ -157,7 +181,7 @@ int parse(void){
 		return result;
 	}
 
-	if(tokenStream[tokenIndex].name == TOKNAME_EOF){
+	if(TOKENNAME[tokenIndex] == TOKNAME_EOF){
 		return 0;
 	} else {
 		// TODO: parser error

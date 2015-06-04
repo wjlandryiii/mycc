@@ -84,11 +84,25 @@ void print_parser_results(){
 		}
 		printf("\n");
 	}
+	printf("\n");
+}
+
+void printParserOutput(){
+	int i, j;
+	for(i = 0; i < nRULES; i++){
+		printf("%s: (%d items) ", strings[SYMBOL[RULENAME[i]]], RULESIZE[i]);
+		for(j = 0; j < RULESIZE[i]; j++){
+			printf(" %s", strings[SYMBOL[RULE[i][j]]]);
+		}
+		printf("\n");
+	}
+	printf("\n");
 }
 
 
 int main(int argc, char *argv[]){
 	test_parser();
 	print_parser_results();
+	printParserOutput();
 	return 0;
 }

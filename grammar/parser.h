@@ -5,6 +5,13 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "defs.h"
+
+extern int nRULES;
+extern int RULENAME[MAX_RULES];
+extern int RULE[MAX_RULES][MAX_RULE_SIZE];
+extern int RULESIZE[MAX_RULES];
+
 
 
 enum PARSER_TERMTYPES{

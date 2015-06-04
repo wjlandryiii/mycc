@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #include "symbols.h"
+#include "parser.h"
 #include "firstfollow.h"
 
 
@@ -19,6 +20,10 @@ int SYMBOLTYPE[MAX_SYMBOLS];
 int nSTRINGS = 0;
 char *STRING[MAX_STRINGS];
 
+int nRULES = 0;
+int RULENAME[MAX_RULES];
+int RULE[MAX_RULES][MAX_RULE_SIZE];
+int RULESIZE[MAX_RULES];
 
 int addString(char *s){
 	assert(nSTRINGS < MAX_STRINGS);
@@ -28,7 +33,7 @@ int addString(char *s){
 
 int addSymbol(int value, int type){
 	assert(nSYMBOLS < MAX_SYMBOLS);
-	assert(type == TYPE_TERMINAL || type == TYPE_NONTERMINAL);
+	assert(type == SYMBOLTYPE_TERMINAL || type == SYMBOLTYPE_NONTERMINAL);
 	SYMBOL[nSYMBOLS] = value;
 	SYMBOLTYPE[nSYMBOLS] = type;
 	return nSYMBOLS++;
@@ -72,13 +77,13 @@ void loadInput_3_12(){
 	 *
 	 */
 
-	int X = addSymbol(addString("X"), TYPE_NONTERMINAL);
-	int Y = addSymbol(addString("Y"), TYPE_NONTERMINAL);
-	int Z = addSymbol(addString("Z"), TYPE_NONTERMINAL);
-	int a = addSymbol(addString("a"), TYPE_TERMINAL);
-	int b = addSymbol(addString("b"), TYPE_TERMINAL);
-	int c = addSymbol(addString("c"), TYPE_TERMINAL);
-	int d = addSymbol(addString("d"), TYPE_TERMINAL);
+	int X = addSymbol(addString("X"), SYMBOLTYPE_NONTERMINAL);
+	int Y = addSymbol(addString("Y"), SYMBOLTYPE_NONTERMINAL);
+	int Z = addSymbol(addString("Z"), SYMBOLTYPE_NONTERMINAL);
+	int a = addSymbol(addString("a"), SYMBOLTYPE_TERMINAL);
+	int b = addSymbol(addString("b"), SYMBOLTYPE_TERMINAL);
+	int c = addSymbol(addString("c"), SYMBOLTYPE_TERMINAL);
+	int d = addSymbol(addString("d"), SYMBOLTYPE_TERMINAL);
 
 	addRule(X, Y, -1);
 	addRule(X, a, -1);
@@ -112,22 +117,22 @@ void loadInput_3_15(){
 	 * F -> ( E )
 	 *
 	 */
-	int S  = addSymbol(addString("S"), TYPE_NONTERMINAL);
-	int E  = addSymbol(addString("E"), TYPE_NONTERMINAL);
-	int Ep = addSymbol(addString("Ep"), TYPE_NONTERMINAL);
-	int T  = addSymbol(addString("T"), TYPE_NONTERMINAL);
-	int Tp = addSymbol(addString("Tp"), TYPE_NONTERMINAL);
-	int F  = addSymbol(addString("F"), TYPE_NONTERMINAL);
+	int S  = addSymbol(addString("S"),  SYMBOLTYPE_NONTERMINAL);
+	int E  = addSymbol(addString("E"),  SYMBOLTYPE_NONTERMINAL);
+	int Ep = addSymbol(addString("Ep"), SYMBOLTYPE_NONTERMINAL);
+	int T  = addSymbol(addString("T"),  SYMBOLTYPE_NONTERMINAL);
+	int Tp = addSymbol(addString("Tp"), SYMBOLTYPE_NONTERMINAL);
+	int F  = addSymbol(addString("F"),  SYMBOLTYPE_NONTERMINAL);
 	
-	int plus    = addSymbol(addString("+"), TYPE_TERMINAL);
-	int minus   = addSymbol(addString("-"), TYPE_TERMINAL);
-	int times   = addSymbol(addString("*"), TYPE_TERMINAL);
-	int divide  = addSymbol(addString("/"), TYPE_TERMINAL);
-	int id      = addSymbol(addString("id"), TYPE_TERMINAL);
-	int num     = addSymbol(addString("num"), TYPE_TERMINAL);
-	int popen   = addSymbol(addString("("), TYPE_TERMINAL);
-	int pclose  = addSymbol(addString(")"), TYPE_TERMINAL);
-	int dollar  = addSymbol(addString("$"), TYPE_TERMINAL);
+	int plus    = addSymbol(addString("+"),   SYMBOLTYPE_TERMINAL);
+	int minus   = addSymbol(addString("-"),   SYMBOLTYPE_TERMINAL);
+	int times   = addSymbol(addString("*"),   SYMBOLTYPE_TERMINAL);
+	int divide  = addSymbol(addString("/"),   SYMBOLTYPE_TERMINAL);
+	int id      = addSymbol(addString("id"),  SYMBOLTYPE_TERMINAL);
+	int num     = addSymbol(addString("num"), SYMBOLTYPE_TERMINAL);
+	int popen   = addSymbol(addString("("),   SYMBOLTYPE_TERMINAL);
+	int pclose  = addSymbol(addString(")"),   SYMBOLTYPE_TERMINAL);
+	int dollar  = addSymbol(addString("$"),   SYMBOLTYPE_TERMINAL);
 
 	addRule(S, E, dollar, -1);
 

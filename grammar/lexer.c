@@ -170,13 +170,16 @@ int tokenize(void){
 					if(name == TOKNAME_TERMINAL){
 						symType = SYMTYPE_TERMINAL;
 						terminalIndex = insertTerminal(i);
-					} else {
+						symbol = insertSymbol(i, SYMBOLTYPE_TERMINAL);
+					} else if(name == TOKNAME_NONTERMINAL){
 						symType = SYMTYPE_NONTERMINAL;
+						symbol = insertSymbol(i, SYMBOLTYPE_NONTERMINAL);
 						nonterminalIndex = insertNonterminal(i);
+					} else {
+						assert(0);
 					}
 					i = setSymbol(i, symType);
 					tokenStream[tokenStreamLength].symbol = i;
-					symbol = insertSymbol(i, symType);
 				}
 			} else if(name == TOKNAME_SIGMA){
 				tokenStream[tokenStreamLength].symbol = 0;

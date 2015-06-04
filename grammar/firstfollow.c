@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #include "symbols.h"
+#include "parser.h"
 #include "firstfollow.h"
 
 
@@ -18,10 +19,12 @@ int SYMBOL[MAX_SYMBOLS];
 int SYMBOLTYPE[MAX_SYMBOLS];
 */
 
+/*
 int nRULES = 0;
 int RULENAME[MAX_RULES];
 int RULE[MAX_RULES][MAX_RULE_SIZE];
 int RULESIZE[MAX_RULES];
+*/
 
 // OUTPUT
 int NULLABLE[MAX_SYMBOLS];
@@ -39,7 +42,7 @@ void computeNullable(){
 	int iteration;
 
 	for(i = 0; i < nSYMBOLS; i++){
-		if(SYMBOLTYPE[i] == TYPE_TERMINAL){
+		if(SYMBOLTYPE[i] == SYMBOLTYPE_TERMINAL){
 			FIRST[i][0] = i;
 			FIRSTSIZE[i] = 1;
 		}

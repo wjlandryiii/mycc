@@ -85,13 +85,13 @@ void loadFirstFollowInput(){
 	for(i = 0; i < nonterminalCount; i++){
 		assert(nSYMBOLS < MAX_SYMBOLS);
 		SYMBOL[nSYMBOLS] = nonterminals[i];
-		SYMBOLTYPE[nSYMBOLS] = TYPE_NONTERMINAL;
+		SYMBOLTYPE[nSYMBOLS] = SYMBOLTYPE_NONTERMINAL;
 		nSYMBOLS += 1;
 	}
 	for(i = 0; i < terminalCount; i++){
 		assert(nSYMBOLS < MAX_SYMBOLS);
 		SYMBOL[nSYMBOLS] = terminals[i];
-		SYMBOLTYPE[nSYMBOLS] = TYPE_TERMINAL;
+		SYMBOLTYPE[nSYMBOLS] = SYMBOLTYPE_TERMINAL;
 		nSYMBOLS += 1;
 	}
 
@@ -126,7 +126,7 @@ void printFirstFollowInput(){
 	for(i = 0; i < nRULES; i++){
 		printf("%2d: %s(%d) ->  ", i, strings[SYMBOL[RULENAME[i]]], SYMBOL[RULENAME[i]]);
 		for(j = 0; j < RULESIZE[i]; j++){
-			printf(" %s", strings[SYMBOL[RULE[i][j]]]);
+			printf(" %s:%d", strings[SYMBOL[RULE[i][j]]], SYMBOL[RULE[i][j]]);
 		}
 		printf("\n");
 	}
@@ -146,7 +146,7 @@ void printFirstFollowOutput(){
 	for(i = 0; i < nSYMBOLS; i++){
 		printf("FIRST(%s) => ", strings[SYMBOL[i]]);
 		for(j = 0; j < FIRSTSIZE[i]; j++){
-			printf(" %s", strings[SYMBOL[FIRST[i][j]]]);
+			printf(" %s:%d", strings[SYMBOL[FIRST[i][j]]], SYMBOL[FIRST[i][j]]);
 		}
 		printf("\n");
 	}
@@ -156,7 +156,7 @@ void printFirstFollowOutput(){
 	for(i = 0; i < nSYMBOLS; i++){
 		printf("FOLLOW(%s) => ", strings[SYMBOL[i]]);
 		for(j = 0; j < FOLLOWSIZE[i]; j++){
-			printf(" %s", strings[SYMBOL[FOLLOW[i][j]]]);
+			printf(" %s:%d", strings[SYMBOL[FOLLOW[i][j]]], SYMBOL[FOLLOW[i][j]]);
 		}
 		printf("\n");
 	}
@@ -183,11 +183,13 @@ int main(int argc, char *argv[]){
 
 	//printParserOutput();
 
-	loadFirstFollowInput();
+	//loadFirstFollowInput();
+	printf("***********   INPUT   **********\n");
 	printFirstFollowInput();
 	computeNullable();
 	computeFirst();
 	computeFollow();
+	printf("***********   OUTPUT   **********\n");
 	printFirstFollowOutput();
 
 	return 0;
