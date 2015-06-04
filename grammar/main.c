@@ -154,9 +154,9 @@ void printFirstFollowOutput(){
 		}
 		printf("\n");
 	}
-	
+
 	printf("\n");
-	
+
 	for(i = 0; i < nSYMBOLS; i++){
 		printf("FOLLOW(%s) => ", STRING[SYMBOL[i]]);
 		for(j = 0; j < FOLLOWSIZE[i]; j++){
@@ -165,12 +165,52 @@ void printFirstFollowOutput(){
 		printf("\n");
 	}
 	printf("\n");
+
+	for(i = 0; i < nRULES; i++){
+		printf("%2d NULLABLE(", i);
+		for(j = 0; j < RULESIZE[i]; j++){
+			printf(" %s ", STRING[SYMBOL[RULE[i][j]]]);
+		}
+		printf("): %s\n", RULENULLABLE[i] ? "YES" : "NO");
+	}
+
+	printf("\n");
+
+	for(i = 0; i < nRULES; i++){
+		printf("%2d FIRST(", i);
+		for(j = 0; j < RULESIZE[i]; j++){
+			printf(" %s ", STRING[SYMBOL[RULE[i][j]]]);
+		}
+		printf("): ");
+
+		for(j = 0; j < RULEFIRSTSIZE[i]; j++){
+			printf(" %s:%d", STRING[SYMBOL[RULEFIRST[i][j]]], SYMBOL[RULEFIRST[i][j]]);
+		}
+		printf("\n");
+	}
+
+	printf("\n");
+
+	for(i = 0; i < nRULES; i++){
+		printf("%2d FOLLOW(", i);
+		for(j = 0; j < RULESIZE[i]; j++){
+			printf(" %s ", STRING[SYMBOL[RULE[i][j]]]);
+		}
+		printf("): ");
+
+		for(j = 0; j < RULEFOLLOWSIZE[i]; j++){
+			printf(" %s:%d", STRING[SYMBOL[RULEFOLLOW[i][j]]], SYMBOL[RULEFOLLOW[i][j]]);
+		}
+		printf("\n");
+	}
+
+	printf("\n");
 }
 
 int main(int argc, char *argv[]){
 	int result;
 	char *fileName = "grammar.txt";
-	fileName = "grammar_3_12.txt";
+	//fileName = "grammar_3_12.txt";
 
 	loadInput(fileName);
 	result = tokenize();

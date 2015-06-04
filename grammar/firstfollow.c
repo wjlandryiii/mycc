@@ -17,6 +17,12 @@ int FIRSTSIZE[MAX_SYMBOLS];
 int FOLLOW[MAX_SYMBOLS][MAX_FOLLOW_SET_SIZE];
 int FOLLOWSIZE[MAX_SYMBOLS];
 
+int RULENULLABLE[MAX_RULES];
+int RULEFIRST[MAX_RULES][MAX_FIRST_SET_SIZE];
+int RULEFIRSTSIZE[MAX_RULES];
+int RULEFOLLOW[MAX_RULES][MAX_FOLLOW_SET_SIZE];
+int RULEFOLLOWSIZE[MAX_RULES];
+
 
 static void computeNullable(){
 	int rule, i, j;
@@ -173,9 +179,92 @@ static void computeFollow(){
 	} while(changed);
 }
 
+static void computeRuleNullable(){
+	int rule;
+	int i;
+
+	for(rule = 0; rule < nRULES; rule++){
+		if(RULESIZE[rule] > 0){
+			for(i = 0; i < RULESIZE[rule]; i++){
+				if(!NULLABLE[RULE[rule][i]]){
+					break;
+				}
+			}
+			if(i == RULESIZE[rule]){
+				RULENULLABLE[rule] = 1;
+			} else {
+				RULENULLABLE[rule] = 0;
+			}
+		} else {
+			// Explicitly for Sigma
+			RULENULLABLE[rule] = 1;
+		}
+	}
+}
+
+static void computeRuleFirst(){
+	int rule;
+	int i, j, k;
+
+	for(rule = 0; rule < nRULES; rule++){
+		for(i = 0; i < RULESIZE[rule]; i++){
+			int symbol = RULE[rule][i];
+			for(j = 0; j < FIRSTSIZE[symbol]; j++){
+				int first = FIRST[symbol][j];
+				for(k = 0; k < RULEFIRSTSIZE[rule]; k++){
+					if(RULEFIRST[rule][k] == first){
+						break;
+					}
+				}
+				if(k == RULEFIRSTSIZE[rule]){
+					assert(RULEFIRSTSIZE[rule] < MAX_FIRST_SET_SIZE);
+					RULEFIRST[rule][RULEFIRSTSIZE[rule]] = first;
+					RULEFIRSTSIZE[rule] += 1;
+				}
+			}
+
+			if(!NULLABLE[RULE[rule][i]]){
+				break;
+			}
+		}
+	}
+}
+
+static void computeRuleFollow(){
+	int rule;
+	int i,j,k;
+
+	// TODO: verify the corectness of this implementation.
+	for(rule = 0; rule < nRULES; rule++){
+		for(i = RULESIZE[rule] - 1; i >= 0; i++){
+			int symbol = RULE[rule][i];
+			for(j = 0; j < FOLLOWSIZE[symbol]; j++){
+				int follow = FOLLOW[symbol][j];
+				for(k = 0; k < RULEFOLLOWSIZE[rule]; k++){
+					if(RULEFOLLOW[rule][k] == follow){
+						break;
+					}
+				}
+				if(k == RULEFOLLOWSIZE[rule]){
+					assert(RULEFOLLOWSIZE[rule] < MAX_FOLLOW_SET_SIZE);
+					RULEFOLLOW[rule][RULEFOLLOWSIZE[rule]] = follow;
+					RULEFOLLOWSIZE[rule] += 1;
+				}
+			}
+
+			if(!NULLABLE[RULE[rule][i]]){
+				break;
+			}
+		}
+	}
+}
+
 int firstfollow(){
 	computeNullable();
 	computeFirst();
 	computeFollow();
+	computeRuleNullable();
+	computeRuleFirst();
+	computeRuleFollow();
 	return 0;
 }
