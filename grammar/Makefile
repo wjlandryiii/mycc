@@ -9,7 +9,7 @@ grammar: grammar.c
 main.o: main.c stringtable.h symbols.h lexer.h parser.h firstfollow.h
 	gcc -g -c -o $@ $<
 
-test_firstfollow.o: test_firstfollow.c
+test_firstfollow.o: test_firstfollow.c firstfollow.h
 	gcc -g -c -o $@ $<
 
 firstfollow.o: firstfollow.c firstfollow.h symbols.h parser.h
@@ -39,7 +39,7 @@ test_stringtable.o: test_stringtable.c stringtable.h
 test_lexer.o: test_lexer.c lexer.h
 	gcc -g -c -o $@ $<
 
-test_firstfollow: test_firstfollow.o
+test_firstfollow: test_firstfollow.o firstfollow.o
 	gcc -g -o $@ $^
 
 test_parser: test_parser.o lexer.o stringtable.o symbols.o parser.o

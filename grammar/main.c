@@ -97,7 +97,7 @@ void printFFSet(struct ff_set_node *n){
 	}
 }
 */
-
+/*
 void printFFSet(struct ff_set *s){
 	printf(" N/A\n");
 }
@@ -124,6 +124,7 @@ void printFirstFollow(){
 		printf("\n");
 	}
 }
+*/
 
 int main(int argc, char *argv[]){
 	int result;
@@ -145,8 +146,8 @@ int main(int argc, char *argv[]){
 
 	//printParserOutput();
 
-	firstfollow();
-	printFirstFollow();
+	//firstfollow();
+	//printFirstFollow();
 
 	return 0;
 }

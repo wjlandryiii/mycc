@@ -7,228 +7,189 @@
 #include <string.h>
 #include <assert.h>
 
-#include "symbols.h"
-#include "parser.h"
 #include "firstfollow.h"
 
 
-struct ff_node *firstFollowSet;
+// INPUT
+int nSYMBOLS = 0;
+int SYMBOL[MAX_SYMBOLS];
+int SYMBOLTYPE[MAX_SYMBOLS];
 
-struct ff_node ffNodes[128];
-int ffNodeCount;
+int nRULES = 0;
+int RULENAME[MAX_RULES];
+int RULE[MAX_RULES][MAX_RULE_SIZE];
+int RULESIZE[MAX_RULES];
 
+// OUTPUT
+int NULLABLE[MAX_SYMBOLS];
 
+int FIRST[MAX_SYMBOLS][MAX_FIRST_SET_SIZE];
+int FIRSTSIZE[MAX_SYMBOLS];
 
-static int isInSet(struct ff_set *set, int needle){
-	int i;
-
-	for(i = 0; i < set->count; i++){
-		if(set->items[i] == needle){
-			return 1;
-		}
-	}
-	return 0;
-}
-
-static int insertIntoSet(struct ff_set *set, int needle){
-	int i, j;
-	int loc;
-
-	assert(set->count < sizeof(set->items)/sizeof(*set->items));
-
-	for(i = 0; i < set->count; i++){
-		if(set->items[i] > needle){
-			break;
-		}
-	}
-	loc = i;
-	for(i = set->count - 1; i >= loc; i--){
-		assert(i+1 < 64);
-		set->items[i+1] = set->items[i];
-	}
-	set->items[loc] = needle;
-	set->count += 1;
-	return 0;
-}
-
-static int insertUnionIntoSet(struct ff_set *dst, struct ff_set *src){
-	int i;
-
-	for(i = 0; i < src->count; i++){
-		if(!isInSet(dst, src->items[i])){
-			insertIntoSet(dst, src->items[i]);
-		}
-	}
-	return 0;
-}
+int FOLLOW[MAX_SYMBOLS][MAX_FOLLOW_SET_SIZE];
+int FOLLOWSIZE[MAX_SYMBOLS];
 
 
-
-
-static int printSet(struct ff_set *set){
-	int i;
-	printf("SET: ");
-	for(i = 0; i < set->count; i++){
-		if(i != 0){
-			printf(", ");
-		}
-		printf("%d", set->items[i]);
-	}
-	printf("\n");
-	return 0;
-}
-
-static int testInsert(struct ff_set *set, int value){
-	if(isInSet(set, value)){
-		printf("%d is already in set\n", value);
-		return -1;
-	}
-	insertIntoSet(set, value);
-	if(!isInSet(set, value)){
-		printf("%d isn't in set\n", value);
-		return -1;
-	}
-	printSet(set);
-	return 0;
-}
-
-
-static int insertTests(){
-
-	struct ff_set set;
-
-	memset(&set, 0, sizeof(set));
-
-	testInsert(&set, 4);
-	testInsert(&set, 3);
-	testInsert(&set, 2);
-	testInsert(&set, 6);
-	testInsert(&set, 7);
-	testInsert(&set, 8);
-	testInsert(&set, 5);
-	return 0;
-}
-
-static int testInsertUnion(){
-	int i;
-	struct ff_set a;
-	struct ff_set b;
-
-	memset(&a, 0, sizeof(a));
-	memset(&b, 0, sizeof(a));
-
-	for(i = 0; i < 10; i++){
-		if(i % 2 == 0){
-			insertIntoSet(&a, i);
-		} else {
-			insertIntoSet(&b, i);
-		}
-	}
-	printf("before:\n");
-	printSet(&a);
-	printSet(&b);
-	insertUnionIntoSet(&a, &b);
-	printf("after\n");
-	printSet(&a);
-	return 0;
-}
-
-static int testSetSizeLimit(){
-	int i;
-	struct ff_set set;
-
-	memset(&set, 0, sizeof(set));
-
-	for(i = 64; i > 0; i--){
-		insertIntoSet(&set, i);
-		printSet(&set);
-	}
-	return 0;
-}
-
-
-
-int isSubsetNullable(int ruleIndex, int start, int end){
-	int i;
-
-	struct rule *r = &rules[ruleIndex];
-
-	printf("Rule: %d  length: %d  Start: %d  End: %d\n", ruleIndex, r->bodyLength, start, end);
-	if(end < start){
-		return 1;
-	}
-
-	for(i = start; i <= end; i++){
-		struct term *t = &r->body[i];
-		if(t->type == TERMTYPE_TERMINAL){
-			return 0;
-		} else if(ffNodes[t->index].isNullable == 0){
-			return 0;
-		}
-	}
-	return 1;
-}
-
-static int calculateFirstFollow(){
-	int ruleIndex;
-	int i, j;
+void computeNullable(){
+	int rule, i, j;
 	int changed;
-	int iterations;
+	int iteration;
 
-	for(i = 0; i < nonterminalCount; i++){
-		struct ff_node *n = &ffNodes[i];
-		n->nonterminal = i;
-		n->isNullable = 0;
-		memset(&n->firstSet, 0, sizeof(n->firstSet));
-		memset(&n->followSet, 0, sizeof(n->followSet));
-		ffNodeCount++;
+	for(i = 0; i < nSYMBOLS; i++){
+		if(SYMBOLTYPE[i] == TYPE_TERMINAL){
+			FIRST[i][0] = i;
+			FIRSTSIZE[i] = 1;
+		}
 	}
 
-	iterations = 0;
+	iteration = 1;
 	changed = 1;
 	while(changed){
+		printf("    *** ITERATION: %d ***\n", iteration);
 		changed = 0;
-
-		for(ruleIndex = 0; ruleIndex < ruleCount; ruleIndex++){
-			struct rule *r = &rules[ruleIndex];
-			int X = r->nonterminalIndex;
-			struct term *Y = r->body;
-			int k = r->bodyLength;
-
-
-			if(ffNodes[r->nonterminalIndex].isNullable == 0){
-				if(isSubsetNullable(ruleIndex, 0, r->bodyLength - 1)){
-					ffNodes[r->nonterminalIndex].isNullable = 1;
+		for(rule = 0; rule < nRULES; rule++){
+			if(NULLABLE[RULENAME[rule]] == 0){
+				for(i = 0; i < RULESIZE[rule]; i++){
+					if(!NULLABLE[RULE[rule][i]]){
+						break;
+					}
+				}
+				if(i == RULESIZE[rule]){
+					NULLABLE[RULENAME[rule]] = 1;
 					changed = 1;
 				}
 			}
+		}
+		iteration += 1;
+	}
+	printf("\n");
+}
 
-			for(i = 0; i < r->bodyLength; i++){
-				struct term *t = &r->body[i];
-				if(isSubsetNullable(ruleIndex, 0, i - 1)){
-					if(t->type == TERMTYPE_TERMINAL){
-					} else if(t->type == TERMTYPE_NONTERMINAL){
-					} else {
-						assert(0);
+static int unionFirst(int dst, int src){
+	int i, j;
+	int changed = 0;
+
+	for(i = 0; i < FIRSTSIZE[src]; i++){
+		int symbol = FIRST[src][i];
+
+		for(j = 0; j < FIRSTSIZE[dst]; j++){
+			if(FIRST[dst][j] == symbol){
+				break;
+			}
+		}
+		if(j == FIRSTSIZE[dst]){
+			assert(FIRSTSIZE[dst] < MAX_FIRST_SET_SIZE);
+			FIRST[dst][j] = symbol;
+			FIRSTSIZE[dst] += 1;
+			changed = 1;
+		}
+	}
+	return changed;
+}
+
+void computeFirst(){
+	int rule, i, j;
+	int changed;
+	int iteration = 1;
+
+	do {
+		printf("    *** ITERATION: %d ***\n", iteration);
+		changed = 0;
+
+		for(rule = 0; rule < nRULES; rule++){
+			printf("RULE: %d\n", rule);
+			for(i = 0; i < RULESIZE[rule]; i++){
+				if(unionFirst(RULENAME[rule], RULE[rule][i])){
+					changed = 1;
+				}
+				if(!NULLABLE[RULE[rule][i]]){
+					break;
+				}
+			}
+		}
+		iteration += 1;
+	} while(changed);
+}
+
+
+static int unionFollow(int dst, int src){
+	int i,j;
+	int changed = 0;
+
+	for(i = 0; i < FOLLOWSIZE[src]; i++){
+		int symbol = FOLLOW[src][i];
+
+		for(j = 0; j < FOLLOWSIZE[dst]; j++){
+			if(FOLLOW[dst][j] == symbol){
+				break;
+			}
+		}
+		if(j == FOLLOWSIZE[dst]){
+			assert(FOLLOWSIZE[dst] < MAX_FOLLOW_SET_SIZE);
+			FOLLOW[dst][j] = symbol;
+			FOLLOWSIZE[dst] += 1;
+			changed = 1;
+		}
+	}
+	return changed;
+}
+
+
+static int unionFollowFirst(int dst, int src){
+	int i,j;
+	int changed = 0;
+
+	for(i = 0; i < FIRSTSIZE[src]; i++){
+		int symbol = FIRST[src][i];
+
+		for(j = 0; j < FOLLOWSIZE[dst]; j++){
+			if(FOLLOW[dst][j] == symbol){
+				break;
+			}
+		}
+		if(j == FOLLOWSIZE[dst]){
+			assert(FOLLOWSIZE[dst] < MAX_FOLLOW_SET_SIZE);
+			FOLLOW[dst][j] = symbol;
+			FOLLOWSIZE[dst] += 1;
+			changed = 1;
+		}
+	}
+	return changed;
+}
+
+void computeFollow(){
+	int rule, i, j;
+	int changed;
+	int iteration = 1;
+
+	do {
+		printf("    *** ITERATION: %d ***\n", iteration);
+		changed = 0;
+
+		for(rule = 0; rule < nRULES; rule++){
+
+			for(i = RULESIZE[rule] - 1; i >= 0; i--){
+				printf("RULE: %d I: %d size: %d\n", rule, i, RULESIZE[rule]);
+				if(unionFollow(RULE[rule][i], RULENAME[rule])){
+					changed = 1;
+				}
+				if(!NULLABLE[RULE[rule][i]]){
+					break;
+				}
+			}
+
+
+			for(i = 0; i < RULESIZE[rule]; i++){
+				for(j = i+1; j < RULESIZE[rule]; j++){
+					if(unionFollowFirst(RULE[rule][i], RULE[rule][j])){
+						changed = 1;
+					}
+					if(!NULLABLE[RULE[rule][j]]){
+						break;
 					}
 				}
 			}
 		}
-		iterations++;
-		printf("Iterations: %d\n", iterations);
-	}
-	printf("RuleCount: %d\n", ruleCount);
-
-	return 0;
+	} while(changed);
 }
 
-int firstfollow(){
-	int test = 0;
-	if(test){
-		insertTests();
-		testInsertUnion();
-		testSetSizeLimit();
-	}
-	calculateFirstFollow();
-	return 0;
-}
