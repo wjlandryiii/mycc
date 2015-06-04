@@ -5,18 +5,21 @@
 #ifndef FIRSTFOLLOW_H
 #define FIRSTFOLLOW_H
 
+#include "symbols.h"  // for MAX_SYMBOLS
+
 // INPUT
-#define MAX_SYMBOLS (256)
 #define MAX_RULES (256)
 #define MAX_RULE_SIZE (128)
 
 #define TYPE_TERMINAL (1)
 #define TYPE_NONTERMINAL (2)
 
-
+/*
+#define MAX_SYMBOLS (256)
 extern int nSYMBOLS;
 extern int SYMBOL[MAX_SYMBOLS];
 extern int SYMBOLTYPE[MAX_SYMBOLS];
+*/
 
 extern int nRULES;
 extern int RULENAME[MAX_RULES];

@@ -7,8 +7,13 @@
 #include <stdarg.h>
 #include <assert.h>
 
+#include "symbols.h"
 #include "firstfollow.h"
 
+
+int nSYMBOLS;
+int SYMBOL[MAX_SYMBOLS];
+int SYMBOLTYPE[MAX_SYMBOLS];
 
 #define MAX_STRINGS (128)
 int nSTRINGS = 0;

@@ -24,6 +24,11 @@ void test_lexer(char *s, int name){
 		printf("lexer failed: _%s_\n", s);
 		return;
 	}
+	if(TOKENNAME[0] != name){
+		printf("lexer failed! : _%s_\n", s);
+		return;
+	}
+	printf("SUCCESS: _%s_\n", s);
 }
 
 void test_tokens(void){

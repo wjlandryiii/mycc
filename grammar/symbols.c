@@ -2,6 +2,7 @@
  * Copyright 2015 Joseph Landry ALl Rights Reserved
  */
 
+#include <assert.h>
 #include "symbols.h"
 
 struct symbol symbolList[1024] = { {SYMTYPE_SIGMA, 0}, {0,0} };
@@ -11,6 +12,7 @@ int terminals[128];
 int terminalCount = 0;
 int nonterminals[128];
 int nonterminalCount = 0;
+
 
 int lookupSymbol(int string){
 	int i;
@@ -71,4 +73,22 @@ int insertNonterminal(int stringIndex){
 	} else {
 		return -1;
 	}
+}
+
+
+int nSYMBOLS = 0;
+int SYMBOL[MAX_SYMBOLS];
+int SYMBOLTYPE[MAX_SYMBOLS];
+
+int insertSymbol(int string, int type){
+	int i;
+	for(i = 0; i < nSYMBOLS; i++){
+		if(SYMBOL[i] == string){
+			return i;
+		}
+	}
+	assert(nSYMBOLS < MAX_SYMBOLS);
+	SYMBOL[nSYMBOLS] = string;
+	SYMBOLTYPE[nSYMBOLS] = type;
+	return nSYMBOLS++;
 }

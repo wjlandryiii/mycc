@@ -6,10 +6,10 @@ main: main.o firstfollow.o parser.o lexer.o stringtable.o symbols.o
 grammar: grammar.c
 	gcc -g -o $@ $<
 
-main.o: main.c stringtable.h symbols.h lexer.h parser.h firstfollow.h
+main.o: main.c stringtable.h symbols.h lexer.h parser.h
 	gcc -g -c -o $@ $<
 
-test_firstfollow.o: test_firstfollow.c firstfollow.h
+test_firstfollow.o: test_firstfollow.c firstfollow.h symbols.h
 	gcc -g -c -o $@ $<
 
 firstfollow.o: firstfollow.c firstfollow.h symbols.h parser.h

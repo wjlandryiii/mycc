@@ -38,6 +38,11 @@ extern int tokenStreamLength;
 extern int lexerErrorNumber;
 extern int lexerErrorLineNumber;
 
+#define MAX_TOKENS (1024)
+extern int nTOKENS;
+extern int TOKENNAME[MAX_TOKENS];
+extern int TOKENVALUE[MAX_TOKENS];
+
 int tokenize(void);
 
 #endif

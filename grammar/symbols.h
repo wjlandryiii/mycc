@@ -26,9 +26,20 @@ extern int terminalCount;
 extern int nonterminals[128];
 extern int nonterminalCount;
 
+
 int lookupSymbol(int string);
 int setSymbol(int string, int type);
 int insertTerminal(int stringIndex);
 int insertNonterminal(int stringIndex);
+
+
+#define MAX_SYMBOLS (1024)
+
+extern int nSYMBOLS;
+extern int SYMBOL[MAX_SYMBOLS];
+extern int SYMBOLTYPE[MAX_SYMBOLS];
+
+int insertSymbol(int string, int type);
+
 
 #endif

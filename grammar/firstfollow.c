@@ -7,13 +7,16 @@
 #include <string.h>
 #include <assert.h>
 
+#include "symbols.h"
 #include "firstfollow.h"
 
 
 // INPUT
+/*
 int nSYMBOLS = 0;
 int SYMBOL[MAX_SYMBOLS];
 int SYMBOLTYPE[MAX_SYMBOLS];
+*/
 
 int nRULES = 0;
 int RULENAME[MAX_RULES];

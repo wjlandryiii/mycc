@@ -2,9 +2,14 @@
  * Copyright 2015 Joseph Landry All Rights Reserved
  */
 
+#include <string.h>
+#include <assert.h>
 #include "lexer.h"
 #include "symbols.h"
 #include "stringtable.h"
+
+
+
 
 char lexerInputBuffer[1024*16];
 struct token tokenStream[1024];
@@ -14,6 +19,22 @@ int tokenizerLineNumber;
 
 int lexerErrorNumber = LEXERR_OK;
 int lexerErrorLineNumber;
+
+
+int nTOKENS = 0;
+int TOKENNAME[MAX_TOKENS];
+int TOKENVALUE[MAX_TOKENS];
+
+
+static int appendToken(int name, int value){
+	assert(nTOKENS < MAX_TOKENS);
+	TOKENNAME[nTOKENS] = name;
+	TOKENVALUE[nTOKENS] = value;
+	return nTOKENS++;
+}
+
+
+
 
 
 static char *in;
@@ -118,6 +139,11 @@ int tokenize(void){
 	int length;
 	int terminalIndex;
 	int nonterminalIndex;
+	int symbol;
+
+	nTOKENS = 0;
+	memset(TOKENNAME, 0, sizeof(TOKENNAME));
+	memset(TOKENVALUE, 0, sizeof(TOKENNAME));
 
 	tokenStreamLength = 0;
 	lexerErrorLineNumber = 1;
@@ -150,6 +176,7 @@ int tokenize(void){
 					}
 					i = setSymbol(i, symType);
 					tokenStream[tokenStreamLength].symbol = i;
+					symbol = insertSymbol(i, symType);
 				}
 			} else if(name == TOKNAME_SIGMA){
 				tokenStream[tokenStreamLength].symbol = 0;
@@ -159,8 +186,11 @@ int tokenize(void){
 			tokenStream[tokenStreamLength].name = name;
 			tokenStream[tokenStreamLength].terminalIndex = terminalIndex;
 			tokenStream[tokenStreamLength].nonterminalIndex = nonterminalIndex;
+
 			tokenStreamLength++;
 			in += length;
+			
+			appendToken(name, symbol); 
 		} else {
 			return -1;
 		}
