@@ -64,3 +64,5 @@ clean:
 	rm -f test_stringtable
 	rm -f test_lexer
 	rm -f test_symbols
+	rm -f test_firstfollow
+	rm -f test_parser
