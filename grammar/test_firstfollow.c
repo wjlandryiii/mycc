@@ -9,17 +9,6 @@
 
 #include "firstfollow.h"
 
-/*
- * X -> Y
- * X -> a
- * 
- * Y ->
- * Y -> c
- *
- * Z -> d
- * Z -> X Y Z
- *
- */
 
 // INPUT
 #define MAX_STRINGS (128)
@@ -94,6 +83,19 @@ void addRule(int ruleName, ...){
 }
 
 void loadInput_3_12(){
+	/*
+	 * Grammar 3.12 from "Modern Compiler Implementation in C" page 48.
+	 * X -> Y
+	 * X -> a
+	 * 
+	 * Y ->
+	 * Y -> c
+	 *
+	 * Z -> d
+	 * Z -> X Y Z
+	 *
+	 */
+
 	int X = addSymbol(addString("X"), TYPE_NONTERMINAL);
 	int Y = addSymbol(addString("Y"), TYPE_NONTERMINAL);
 	int Z = addSymbol(addString("Z"), TYPE_NONTERMINAL);
@@ -113,6 +115,27 @@ void loadInput_3_12(){
 }
 
 void loadInput_3_15(){
+	/*
+	 * Grammar 3.15 from "Modern Compiler Implementation in C" page 53.
+	 *
+	 * S -> E $
+	 * E -> T E'
+	 *
+	 * E' -> + T E'
+	 * E' -> - T E'
+	 * E' ->
+	 *
+	 * T -> F T'
+	 *
+	 * T' -> * F T'
+	 * T' -> / F T'
+	 * T' ->
+	 *
+	 * F -> id
+	 * F -> num
+	 * F -> ( E )
+	 *
+	 */
 	int S  = addSymbol(addString("S"), TYPE_NONTERMINAL);
 	int E  = addSymbol(addString("E"), TYPE_NONTERMINAL);
 	int Ep = addSymbol(addString("Ep"), TYPE_NONTERMINAL);
