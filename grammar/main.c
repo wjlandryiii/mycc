@@ -77,7 +77,7 @@ void printParserOutput(){
 	}
 	printf("\t;\n");
 }
-
+/*
 void printFFSet(struct ff_set_node *n){
 	if(n != NULL){
 		while(n){
@@ -88,7 +88,7 @@ void printFFSet(struct ff_set_node *n){
 			symbolIndex = n->symbolIndex;
 			stringIndex = terminals[symbolIndex];
 			string = strings[stringIndex];
-			printf(" %s", string);
+			printf(" \"%s\"", string);
 			n = n->next;
 		}
 		printf("\n");
@@ -96,35 +96,39 @@ void printFFSet(struct ff_set_node *n){
 		printf(" (empty)\n");
 	}
 }
+*/
+
+void printFFSet(struct ff_set *s){
+	printf(" N/A\n");
+}
 
 void printFirstFollow(){
-	struct ff_node *p;
+	int i;
 	int symbolIndex;
 	int stringIndex;
 	char *string;
 
-	p = firstFollowSet;
+	for(i = 0; i < ffNodeCount; i++){
+		struct ff_node *n = &ffNodes[i];
 
-	while(p){
-		symbolIndex = p->nonTerminalSymbolIndex;
+		symbolIndex = n->nonterminal;
 		stringIndex = nonterminals[symbolIndex];
 		string = strings[stringIndex];
 		printf("%s\n", string);
-		printf("\tNullable  : %s\n", p->isNullable ? "YES" : "NO");
+		printf("\tNullable  : %s\n", n->isNullable ? "YES" : "NO");
 		printf("\tFIRST SET :");
-		printFFSet(p->first);
+		printFFSet(&n->firstSet);
 		printf("\tFOLLOW SET:");
-		printFFSet(p->follow);
+		printFFSet(&n->followSet);
 
 		printf("\n");
-		p = p->next;
 	}
 }
 
 int main(int argc, char *argv[]){
 	int result;
 	char *fileName = "grammar.txt";
-	//fileName = "grammar_3_12.txt";
+	fileName = "grammar_3_12.txt";
 
 	loadInput(fileName);
 	result = tokenize();
@@ -139,10 +143,10 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
-	printParserOutput();
+	//printParserOutput();
 
 	firstfollow();
-	//printFirstFollow();
+	printFirstFollow();
 
 	return 0;
 }

@@ -5,20 +5,21 @@
 #ifndef FIRSTFOLLOW_H
 #define FIRSTFOLLOW_H
 
-struct ff_set_node {
-	struct ff_set_node *next;
-	int symbolIndex;
+
+struct ff_set {
+	int count;
+	int items[64];
 };
 
 struct ff_node {
-	struct ff_node *next;
-	int nonTerminalSymbolIndex;
+	int nonterminal;
 	int isNullable;
-	struct ff_set_node *first;
-	struct ff_set_node *follow;
+	struct ff_set firstSet;
+	struct ff_set followSet;
 };
 
-extern struct ff_node *firstFollowSet;
+extern struct ff_node ffNodes[128];
+extern int ffNodeCount;
 
 int firstfollow();
 

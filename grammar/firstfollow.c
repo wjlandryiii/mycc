@@ -2,7 +2,10 @@
  *	 Copyright 2015 Joseph Landry All Rights Reserved
  */
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 
 #include "symbols.h"
 #include "parser.h"
@@ -11,152 +14,221 @@
 
 struct ff_node *firstFollowSet;
 
-static int isNullable(int symbolIndex){
-	struct ff_node *p = firstFollowSet;
+struct ff_node ffNodes[128];
+int ffNodeCount;
 
-	while(p){
-		if(p->nonTerminalSymbolIndex == symbolIndex){
-			return p->isNullable;
-		}
-		p = p->next;
-	}
-	return 0;
-}
 
-static int setIsNullable(int symbolIndex){
-	struct ff_node *p = firstFollowSet;
 
-	while(p){
-		if(p->nonTerminalSymbolIndex == symbolIndex){
-			p->isNullable = 1;
-			return 0;
-		}
-		p = p->next;
-	}
-	return -1;
-}
+static int isInSet(struct ff_set *set, int needle){
+	int i;
 
-static int setFirstLiteral(int symbolIndex, int literal){
-	struct ff_node *p = firstFollowSet;
-
-	while(p){
-		if(p->nonTerminalSymbolIndex == symbolIndex){
-			struct ff_set_node *set = p->first;
-
-			while(set){
-				if(set->symbolIndex == literal){
-					return 0;
-				}
-				set = set->next;
-			}
-			// NOT FOUND
-			set = malloc(sizeof(*set));
-			set->symbolIndex = literal;
-			set->next = p->first;
-			p->first = set;
+	for(i = 0; i < set->count; i++){
+		if(set->items[i] == needle){
 			return 1;
 		}
-		p = p->next;
 	}
 	return 0;
 }
 
-static int unionFirstSets(int symbolIndex, int withSymbolIndex){
-	struct ff_node *p = firstFollowSet;
+static int insertIntoSet(struct ff_set *set, int needle){
+	int i, j;
+	int loc;
 
-	p = firstFollowSet;
-	while(p){
-		if(p->nonTerminalSymbolIndex == withSymbolIndex){
-			struct ff_set_node *set = p->first;
-			int change = 0;
+	assert(set->count < sizeof(set->items)/sizeof(*set->items));
 
-			while(set){
-				change |= setFirstLiteral(symbolIndex, set->symbolIndex);
-				set = set->next;
-			}
-			return change;
+	for(i = 0; i < set->count; i++){
+		if(set->items[i] > needle){
+			break;
 		}
-		p = p->next;
 	}
-	// DIDN'T FIND withSymbolIndex
+	loc = i;
+	for(i = set->count - 1; i >= loc; i--){
+		assert(i+1 < 64);
+		set->items[i+1] = set->items[i];
+	}
+	set->items[loc] = needle;
+	set->count += 1;
 	return 0;
 }
 
-static int initFirstFollow(){
-	struct ff_node *list = 0;
-	struct ff_node **parent = &list;
+static int insertUnionIntoSet(struct ff_set *dst, struct ff_set *src){
+	int i;
 
-	//while(p){
-	int nonterminalIndex;
-	for(nonterminalIndex = 0; nonterminalIndex < nonterminalCount; nonterminalIndex++){
-		struct ff_node *l = malloc(sizeof(struct ff_node));
-
-		if(l == 0){
-			// memory error
-			return -1;
+	for(i = 0; i < src->count; i++){
+		if(!isInSet(dst, src->items[i])){
+			insertIntoSet(dst, src->items[i]);
 		}
-
-		*parent = l;
-		l->next = 0;
-		l->nonTerminalSymbolIndex = nonterminalIndex;
-		l->isNullable = 0;
-		l->first = 0;
-		l->follow = 0;
-
-		parent = &l->next;
 	}
-	firstFollowSet = list;
 	return 0;
 }
 
 
-int firstfollow(){
+
+
+static int printSet(struct ff_set *set){
+	int i;
+	printf("SET: ");
+	for(i = 0; i < set->count; i++){
+		if(i != 0){
+			printf(", ");
+		}
+		printf("%d", set->items[i]);
+	}
+	printf("\n");
+	return 0;
+}
+
+static int testInsert(struct ff_set *set, int value){
+	if(isInSet(set, value)){
+		printf("%d is already in set\n", value);
+		return -1;
+	}
+	insertIntoSet(set, value);
+	if(!isInSet(set, value)){
+		printf("%d isn't in set\n", value);
+		return -1;
+	}
+	printSet(set);
+	return 0;
+}
+
+
+static int insertTests(){
+
+	struct ff_set set;
+
+	memset(&set, 0, sizeof(set));
+
+	testInsert(&set, 4);
+	testInsert(&set, 3);
+	testInsert(&set, 2);
+	testInsert(&set, 6);
+	testInsert(&set, 7);
+	testInsert(&set, 8);
+	testInsert(&set, 5);
+	return 0;
+}
+
+static int testInsertUnion(){
+	int i;
+	struct ff_set a;
+	struct ff_set b;
+
+	memset(&a, 0, sizeof(a));
+	memset(&b, 0, sizeof(a));
+
+	for(i = 0; i < 10; i++){
+		if(i % 2 == 0){
+			insertIntoSet(&a, i);
+		} else {
+			insertIntoSet(&b, i);
+		}
+	}
+	printf("before:\n");
+	printSet(&a);
+	printSet(&b);
+	insertUnionIntoSet(&a, &b);
+	printf("after\n");
+	printSet(&a);
+	return 0;
+}
+
+static int testSetSizeLimit(){
+	int i;
+	struct ff_set set;
+
+	memset(&set, 0, sizeof(set));
+
+	for(i = 64; i > 0; i--){
+		insertIntoSet(&set, i);
+		printSet(&set);
+	}
+	return 0;
+}
+
+
+
+int isSubsetNullable(int ruleIndex, int start, int end){
+	int i;
+
+	struct rule *r = &rules[ruleIndex];
+
+	printf("Rule: %d  length: %d  Start: %d  End: %d\n", ruleIndex, r->bodyLength, start, end);
+	if(end < start){
+		return 1;
+	}
+
+	for(i = start; i <= end; i++){
+		struct term *t = &r->body[i];
+		if(t->type == TERMTYPE_TERMINAL){
+			return 0;
+		} else if(ffNodes[t->index].isNullable == 0){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int calculateFirstFollow(){
 	int ruleIndex;
+	int i, j;
 	int changed;
+	int iterations;
 
-	initFirstFollow();
+	for(i = 0; i < nonterminalCount; i++){
+		struct ff_node *n = &ffNodes[i];
+		n->nonterminal = i;
+		n->isNullable = 0;
+		memset(&n->firstSet, 0, sizeof(n->firstSet));
+		memset(&n->followSet, 0, sizeof(n->followSet));
+		ffNodeCount++;
+	}
 
+	iterations = 0;
 	changed = 1;
 	while(changed){
 		changed = 0;
 
-		ruleIndex = 0;
 		for(ruleIndex = 0; ruleIndex < ruleCount; ruleIndex++){
-			int bodyIndex;
-			int symbol = rules[ruleIndex].nonterminalIndex;
-			int bodyLength = rules[ruleIndex].bodyLength;
-			struct term *body = rules[ruleIndex].body;
+			struct rule *r = &rules[ruleIndex];
+			int X = r->nonterminalIndex;
+			struct term *Y = r->body;
+			int k = r->bodyLength;
 
-			int allNullable = 1;
 
-			for(bodyIndex = 0; bodyIndex < bodyLength; bodyIndex++){
-				int type = body[bodyIndex].type;
-				int index = body[bodyIndex].index;
+			if(ffNodes[r->nonterminalIndex].isNullable == 0){
+				if(isSubsetNullable(ruleIndex, 0, r->bodyLength - 1)){
+					ffNodes[r->nonterminalIndex].isNullable = 1;
+					changed = 1;
+				}
+			}
 
-				if(allNullable){
-					if(type == TERMTYPE_NONTERMINAL){
-						changed |= unionFirstSets(symbol, index);
-					} else if(type == TERMTYPE_TERMINAL){
-						changed |= setFirstLiteral(symbol, index);
+			for(i = 0; i < r->bodyLength; i++){
+				struct term *t = &r->body[i];
+				if(isSubsetNullable(ruleIndex, 0, i - 1)){
+					if(t->type == TERMTYPE_TERMINAL){
+					} else if(t->type == TERMTYPE_NONTERMINAL){
+					} else {
+						assert(0);
 					}
 				}
-
-				if(type == TERMTYPE_NONTERMINAL){
-					allNullable &= isNullable(index);
-				} else if(type == TERMTYPE_TERMINAL){
-					allNullable = 0;
-				} else {
-					// TODO: was sigma
-					// allNullable &= 1;
-					;
-				}
-			}
-			if(allNullable && !isNullable(symbol)){
-				setIsNullable(symbol);
-				changed = 1;
 			}
 		}
+		iterations++;
+		printf("Iterations: %d\n", iterations);
 	}
+	printf("RuleCount: %d\n", ruleCount);
 
+	return 0;
+}
+
+int firstfollow(){
+	int test = 0;
+	if(test){
+		insertTests();
+		testInsertUnion();
+		testSetSizeLimit();
+	}
+	calculateFirstFollow();
 	return 0;
 }

@@ -9,4 +9,5 @@ grammar/test_symbols
 grammar/test_stringtable
 grammar/test_lexer
 grammar/test_parser
+grammar/test_firstfollow
 grammar/main
