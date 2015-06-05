@@ -12,6 +12,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "firstfollow.h"
+#include "predictiveparsetable.h"
 
 void loadInput(char *fileName){
 	long fileSize;
@@ -207,10 +208,55 @@ void printFirstFollowOutput(){
 	printf("\n");
 }
 
+
+void printPredictiveParseTableOutput(){
+	int nonterminal;
+	int terminal;
+	int rule;
+	int i;
+
+	for(nonterminal = 0; nonterminal < nSYMBOLS; nonterminal++){
+		if(SYMBOLTYPE[nonterminal] != SYMBOLTYPE_NONTERMINAL){
+			continue;
+		}
+
+		for(terminal = 0; terminal < nSYMBOLS; terminal++){
+			if(SYMBOLTYPE[terminal] != SYMBOLTYPE_TERMINAL){
+				continue;
+			}
+
+			if(PPTABLE[nonterminal][terminal] < 0){
+				continue;
+			}
+
+			printf("[<%s>:'%s']: ",
+					STRING[SYMBOL[nonterminal]],
+					STRING[SYMBOL[terminal]]);
+
+			rule = PPTABLE[nonterminal][terminal];
+			printf("<%s> => ", STRING[SYMBOL[RULENAME[rule]]]);
+			for(i = 0; i < RULESIZE[rule]; i++){
+				if(SYMBOLTYPE[RULE[rule][i]] == SYMBOLTYPE_TERMINAL){
+					printf(" '%s'", STRING[SYMBOL[RULE[rule][i]]]);
+				} else {
+					printf(" <%s>", STRING[SYMBOL[RULE[rule][i]]]);
+				}
+			}
+			if(RULESIZE[rule] == 0){
+				printf("(epsilon)");
+			}
+			printf("\n");
+		}
+	}
+
+
+}
+
 int main(int argc, char *argv[]){
 	int result;
 	char *fileName = "grammar.txt";
 	//fileName = "grammar_3_12.txt";
+	fileName = "grammar_4_28.txt";
 
 	loadInput(fileName);
 	result = tokenize();
@@ -231,8 +277,12 @@ int main(int argc, char *argv[]){
 	printf("***********   INPUT   **********\n");
 	printFirstFollowInput();
 	firstfollow();
-	printf("***********   OUTPUT   **********\n");
+	printf("***********   NULLABLE FIRST FOLLOW   **********\n");
 	printFirstFollowOutput();
+
+	predictiveparsetable();
+	printf("***********   PREDICTIVE PARSE TABLE   **********\n");
+	printPredictiveParseTableOutput();
 
 	return 0;
 }

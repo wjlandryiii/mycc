@@ -1,0 +1,24 @@
+# Grammar 4.28 from "Compilers: Priciples, Techniques, & Tools" Second Edition page 217
+
+<E>
+	: <T> <Ep>
+	;
+
+<Ep>
+	: "+" <T> <Ep>
+	| ''
+	;
+
+<T>
+	: <F> <Tp>
+	;
+
+<Tp>
+	: "*" <F> <Tp>
+	| ''
+	;
+
+<F>
+	: "(" <E> ")"
+	| "%id%"
+	;

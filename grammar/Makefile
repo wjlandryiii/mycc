@@ -1,15 +1,18 @@
 all: main grammar test_stringtable test_lexer test_symbols test_parser test_firstfollow
 
-main: main.o firstfollow.o parser.o lexer.o stringtable.o symbols.o
+main: main.o predictiveparsetable.o firstfollow.o parser.o lexer.o stringtable.o symbols.o
 	gcc -Wl,-stack_size -Wl,0x1000000 -g -o $@ $^
 
 grammar: grammar.c
 	gcc -g -o $@ $<
 
-main.o: main.c stringtable.h symbols.h lexer.h parser.h
+main.o: main.c stringtable.h symbols.h lexer.h parser.h firstfollow.h predictiveparsetable.h
 	gcc -g -c -o $@ $<
 
 test_firstfollow.o: test_firstfollow.c firstfollow.h symbols.h
+	gcc -g -c -o $@ $<
+
+predictiveparsetable.o: predictiveparsetable.c predictiveparsetable.h parser.h firstfollow.h
 	gcc -g -c -o $@ $<
 
 firstfollow.o: firstfollow.c firstfollow.h symbols.h parser.h
