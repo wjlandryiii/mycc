@@ -11,3 +11,4 @@ grammar/test_lexer
 grammar/test_parser
 grammar/test_firstfollow
 grammar/main
+grammar/lr0
