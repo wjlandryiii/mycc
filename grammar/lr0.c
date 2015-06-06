@@ -139,12 +139,12 @@ static int CLOSURE(){
 	return 0;
 }
 
-static int GOTO(){
+static int GOTOfn(){
 	int i, j;
 
 	nJS = 0;
 
-	printf("GOTO INPUT: I = { ");
+	printf("GOTOfn INPUT: I = { ");
 	for(i = 0; i < nIS; i++){
 		printf(" %2d,", I[i]);
 	}
@@ -160,7 +160,7 @@ static int GOTO(){
 
 		if(dot < ruleSize){
 			int symbol = RULE[rule][dot];
-			//printf("GOTO: {X:%2d} {symbol:%2d}\n", X, symbol);
+			//printf("GOTOfn: {X:%2d} {symbol:%2d}\n", X, symbol);
 			if(symbol == X){
 				int item = ITEMINDEX[rule][dot+1];
 				if(!isInJ(item)){
@@ -185,6 +185,8 @@ static int nCS = 0;
 static int C[MAX_SOMETHING][MAX_SOMETHING];
 static int CSIZE[MAX_SOMETHING];
 
+static int GOTO[MAX_SOMETHING][MAX_SYMBOLS];
+
 static void items(){
 	int i, j, k, l;
 	int changed;
@@ -195,6 +197,9 @@ static void items(){
 		CSIZE[i] = 0;
 		for(j = 0; j < MAX_SOMETHING; j++){
 			C[i][j] = 0;
+		}
+		for(j = 0; j < MAX_SYMBOLS; j++){
+			GOTO[i][j] = -1;
 		}
 	}
 
@@ -218,7 +223,7 @@ static void items(){
 					I[nIS++] = C[i][k];
 				}
 				X = j;
-				GOTO();
+				GOTOfn();
 				printf("  nJS: %d  %s\n", nJS, STRING[SYMBOL[j]]);
 				if(nJS > 0){
 					int found = 0;
@@ -232,6 +237,7 @@ static void items(){
 							}
 							if(l == nJS){
 								found = 1;
+								GOTO[i][j] = k;
 								break;
 							}
 						}
@@ -244,6 +250,7 @@ static void items(){
 							C[nCS][CSIZE[nCS]] = J[k];
 							CSIZE[nCS] += 1;
 						}
+						GOTO[i][j] = nCS;
 						nCS += 1;
 						changed = 1;
 					}
@@ -254,6 +261,7 @@ static void items(){
 	} while(0);
 
 }
+
 
 
 ///////////////////      TESTING               ///////////////
@@ -340,7 +348,7 @@ char *grammar_4_1 =
 	"	;\n";
 
 void test_grammar_4_1(){
-	int i;
+	int i, j;
 
 	strcpy(INPUTSTRING, grammar_4_1);
 	tokenize();
@@ -367,7 +375,7 @@ void test_grammar_4_1(){
 	CLOSURE();
 	printJ();
 
-	printf("********* GOTO(I,X) **************\n");
+	printf("********* GOTOfn(I,X) **************\n");
 	/*
 	 *  0:  E ->  .  E    +    T
 	 *  1:  E ->     E .  +    T
@@ -407,7 +415,7 @@ void test_grammar_4_1(){
 	nIS = nJS;
 
 	X = 5;
-	GOTO();
+	GOTOfn();
 	for(i = 0; i < nJS; i++){
 		printItem(J[i]);
 	}
@@ -421,6 +429,21 @@ void test_grammar_4_1(){
 	printItemSets();
 	printf("number of item sets: %d\n", nCS);
 	printJ();
+
+	printf("************* GOTO ****************\n");
+	for(i = 0; i < nCS; i++){
+		printf("I%-2d | ", i);
+		for(j = 0; j < nSYMBOLS; j++){
+			if(SYMBOLTYPE[j] == SYMBOLTYPE_NONTERMINAL){
+				if(GOTO[i][j] >= 0){
+					printf(" [%2s -> %2d]", STRING[SYMBOL[j]], GOTO[i][j]);
+				} else {
+					printf(" [        ]");
+				}
+			}
+		}
+		printf("\n");
+	}
 
 
 }
