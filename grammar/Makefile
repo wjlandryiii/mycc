@@ -4,7 +4,15 @@ all: main \
 	test_lexer \
 	test_symbols \
 	test_parser \
-	test_firstfollow
+	test_firstfollow \
+	lr0
+
+
+lr0.o: lr0.c stringtable.h symbols.h lexer.h parser.h
+	gcc -g -c -o $@ $<
+
+lr0: lr0.o stringtable.o symbols.o lexer.o parser.o
+	gcc -g -o $@ $^
 
 
 grammar: grammar.c
