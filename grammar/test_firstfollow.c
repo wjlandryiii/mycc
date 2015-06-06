@@ -4,71 +4,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <assert.h>
 
+#include "stringtable.h"
 #include "symbols.h"
 #include "parser.h"
 #include "firstfollow.h"
 
-
-int nSYMBOLS;
-int SYMBOL[MAX_SYMBOLS];
-int SYMBOLTYPE[MAX_SYMBOLS];
-
-#define MAX_STRINGS (128)
-int nSTRINGS = 0;
-char *STRING[MAX_STRINGS];
-
-int nRULES = 0;
-int RULENAME[MAX_RULES];
-int RULE[MAX_RULES][MAX_RULE_SIZE];
-int RULESIZE[MAX_RULES];
-
-int addString(char *s){
-	assert(nSTRINGS < MAX_STRINGS);
-	STRING[nSTRINGS] = s;
-	return nSTRINGS++;
-}
-
-int addSymbol(int value, int type){
-	assert(nSYMBOLS < MAX_SYMBOLS);
-	assert(type == SYMBOLTYPE_TERMINAL || type == SYMBOLTYPE_NONTERMINAL);
-	SYMBOL[nSYMBOLS] = value;
-	SYMBOLTYPE[nSYMBOLS] = type;
-	return nSYMBOLS++;
-}
-
-void addRule(int ruleName, ...){
-	va_list ap;
-	int symbol;
-	int n;
-
-	assert(nRULES < MAX_RULES);
-
-	RULENAME[nRULES] = ruleName;
-	RULESIZE[nRULES] = 0;
-
-	va_start(ap, ruleName);
-
-	n = 0;
-	symbol = va_arg(ap, int);
-	while(symbol > -1){
-		assert(n < MAX_RULE_SIZE);
-		RULE[nRULES][n] = symbol;
-		n += 1;
-		symbol = va_arg(ap, int);
-	}
-	RULESIZE[nRULES] = n;
-	nRULES += 1;
-}
 
 void loadInput_3_12(){
 	/*
 	 * Grammar 3.12 from "Modern Compiler Implementation in C" page 48.
 	 * X -> Y
 	 * X -> a
-	 * 
+	 *
 	 * Y ->
 	 * Y -> c
 	 *
@@ -77,13 +26,13 @@ void loadInput_3_12(){
 	 *
 	 */
 
-	int X = addSymbol(addString("X"), SYMBOLTYPE_NONTERMINAL);
-	int Y = addSymbol(addString("Y"), SYMBOLTYPE_NONTERMINAL);
-	int Z = addSymbol(addString("Z"), SYMBOLTYPE_NONTERMINAL);
-	int a = addSymbol(addString("a"), SYMBOLTYPE_TERMINAL);
-	int b = addSymbol(addString("b"), SYMBOLTYPE_TERMINAL);
-	int c = addSymbol(addString("c"), SYMBOLTYPE_TERMINAL);
-	int d = addSymbol(addString("d"), SYMBOLTYPE_TERMINAL);
+	int X = insertSymbol(insertString("X"), SYMBOLTYPE_NONTERMINAL);
+	int Y = insertSymbol(insertString("Y"), SYMBOLTYPE_NONTERMINAL);
+	int Z = insertSymbol(insertString("Z"), SYMBOLTYPE_NONTERMINAL);
+	int a = insertSymbol(insertString("a"), SYMBOLTYPE_TERMINAL);
+	int b = insertSymbol(insertString("b"), SYMBOLTYPE_TERMINAL);
+	int c = insertSymbol(insertString("c"), SYMBOLTYPE_TERMINAL);
+	int d = insertSymbol(insertString("d"), SYMBOLTYPE_TERMINAL);
 
 	addRule(X, Y, -1);
 	addRule(X, a, -1);
@@ -117,22 +66,22 @@ void loadInput_3_15(){
 	 * F -> ( E )
 	 *
 	 */
-	int S  = addSymbol(addString("S"),  SYMBOLTYPE_NONTERMINAL);
-	int E  = addSymbol(addString("E"),  SYMBOLTYPE_NONTERMINAL);
-	int Ep = addSymbol(addString("Ep"), SYMBOLTYPE_NONTERMINAL);
-	int T  = addSymbol(addString("T"),  SYMBOLTYPE_NONTERMINAL);
-	int Tp = addSymbol(addString("Tp"), SYMBOLTYPE_NONTERMINAL);
-	int F  = addSymbol(addString("F"),  SYMBOLTYPE_NONTERMINAL);
-	
-	int plus    = addSymbol(addString("+"),   SYMBOLTYPE_TERMINAL);
-	int minus   = addSymbol(addString("-"),   SYMBOLTYPE_TERMINAL);
-	int times   = addSymbol(addString("*"),   SYMBOLTYPE_TERMINAL);
-	int divide  = addSymbol(addString("/"),   SYMBOLTYPE_TERMINAL);
-	int id      = addSymbol(addString("id"),  SYMBOLTYPE_TERMINAL);
-	int num     = addSymbol(addString("num"), SYMBOLTYPE_TERMINAL);
-	int popen   = addSymbol(addString("("),   SYMBOLTYPE_TERMINAL);
-	int pclose  = addSymbol(addString(")"),   SYMBOLTYPE_TERMINAL);
-	int dollar  = addSymbol(addString("$"),   SYMBOLTYPE_TERMINAL);
+	int S  = insertSymbol(insertString("S"),  SYMBOLTYPE_NONTERMINAL);
+	int E  = insertSymbol(insertString("E"),  SYMBOLTYPE_NONTERMINAL);
+	int Ep = insertSymbol(insertString("Ep"), SYMBOLTYPE_NONTERMINAL);
+	int T  = insertSymbol(insertString("T"),  SYMBOLTYPE_NONTERMINAL);
+	int Tp = insertSymbol(insertString("Tp"), SYMBOLTYPE_NONTERMINAL);
+	int F  = insertSymbol(insertString("F"),  SYMBOLTYPE_NONTERMINAL);
+
+	int plus    = insertSymbol(insertString("+"),   SYMBOLTYPE_TERMINAL);
+	int minus   = insertSymbol(insertString("-"),   SYMBOLTYPE_TERMINAL);
+	int times   = insertSymbol(insertString("*"),   SYMBOLTYPE_TERMINAL);
+	int divide  = insertSymbol(insertString("/"),   SYMBOLTYPE_TERMINAL);
+	int id      = insertSymbol(insertString("id"),  SYMBOLTYPE_TERMINAL);
+	int num     = insertSymbol(insertString("num"), SYMBOLTYPE_TERMINAL);
+	int popen   = insertSymbol(insertString("("),   SYMBOLTYPE_TERMINAL);
+	int pclose  = insertSymbol(insertString(")"),   SYMBOLTYPE_TERMINAL);
+	int dollar  = insertSymbol(insertString("$"),   SYMBOLTYPE_TERMINAL);
 
 	addRule(S, E, dollar, -1);
 
@@ -192,9 +141,9 @@ void printOutput(){
 		}
 		printf("\n");
 	}
-	
+
 	printf("\n");
-	
+
 	for(i = 0; i < nSYMBOLS; i++){
 		printf("FOLLOW(%s) => ", STRING[SYMBOL[i]]);
 		for(j = 0; j < FOLLOWSIZE[i]; j++){

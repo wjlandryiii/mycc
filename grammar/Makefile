@@ -38,7 +38,7 @@ test_parser.o: test_parser.c lexer.h stringtable.h symbols.h parser.h
 firstfollow.o: firstfollow.c firstfollow.h symbols.h parser.h
 	gcc -g -c -o $@ $<
 
-test_firstfollow.o: test_firstfollow.c firstfollow.h symbols.h
+test_firstfollow.o: test_firstfollow.c firstfollow.h symbols.h stringtable.h lexer.h parser.h
 	gcc -g -c -o $@ $<
 
 predictiveparsetable.o: predictiveparsetable.c predictiveparsetable.h parser.h firstfollow.h
@@ -67,7 +67,7 @@ test_lexer: test_lexer.o lexer.o symbols.o stringtable.o
 test_parser: test_parser.o lexer.o stringtable.o symbols.o parser.o
 	gcc -g -o $@ $^
 
-test_firstfollow: test_firstfollow.o firstfollow.o
+test_firstfollow: test_firstfollow.o firstfollow.o stringtable.o symbols.o lexer.o parser.o
 	gcc -g -o $@ $^
 
 

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdarg.h>
 
 
 int nRULES = 0;
@@ -19,6 +20,31 @@ int RULESIZE[MAX_RULES];
 
 
 int parserErrorNumber = 0;
+
+void addRule(int ruleName, ...){
+	va_list ap;
+	int symbol;
+	int n;
+
+	assert(nRULES < MAX_RULES);
+
+	RULENAME[nRULES] = ruleName;
+	RULESIZE[nRULES] = 0;
+
+	va_start(ap, ruleName);
+
+	n = 0;
+	symbol = va_arg(ap, int);
+	while(symbol > -1){
+		assert(n < MAX_RULE_SIZE);
+		RULE[nRULES][n] = symbol;
+		n += 1;
+		symbol = va_arg(ap, int);
+	}
+	RULESIZE[nRULES] = n;
+	nRULES += 1;
+}
+
 
 
 static int tokenIndex;

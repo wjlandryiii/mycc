@@ -21,6 +21,7 @@ enum PARSER_ERRORS {
 };
 extern int parserErrorNumber;
 
+void addRule(int ruleName, ...);
 int parse(void);
 
 #endif
