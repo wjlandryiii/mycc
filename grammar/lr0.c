@@ -55,6 +55,7 @@ static int generateItems(){
 
 static int I[MAX_SOMETHING];
 static int nIS;
+static int X;
 static int J[MAX_SOMETHING];
 static int nJS;
 
@@ -98,11 +99,11 @@ static int CLOSURE(){
 
 			if(dot < rulesize){
 				int symbol = RULE[rule][dot];
-				printf("RULE:%d DOT:%d ", rule, dot);
-				printf("\tsymbol: %s(%d)(%d\n", STRING[SYMBOL[symbol]], SYMBOL[symbol], symbol);
 				if(SYMBOLTYPE[symbol] == SYMBOLTYPE_TERMINAL){
 					continue;
 				}
+				printf("RULE:%d DOT:%d ", rule, dot);
+				printf("\tsymbol: %s(%d)(%d\n", STRING[SYMBOL[symbol]], SYMBOL[symbol], symbol);
 				for(j = 0; j < nRULES; j++){
 					if(RULENAME[j] == symbol){
 						int rule = j;
@@ -121,6 +122,29 @@ static int CLOSURE(){
 }
 
 static int GOTO(){
+	int i, j;
+
+	nJS = 0;
+
+	for(i = 0; i < nIS; i++){
+		int rule = ITEM[I[i]];
+		int dot = ITEMDOT[I[i]];
+		int ruleSize = RULESIZE[rule];
+
+		if(dot <= ruleSize){
+			int symbol = RULE[rule][dot];
+			if(symbol == X){
+				int item = ITEMINDEX[rule][dot+1];
+				insertIntoJ(item);
+			}
+		}
+	}
+
+	for(i = 0; i < nJS; i++){
+		I[i] = J[i];
+	}
+	nIS = nJS;
+	CLOSURE();
 	return 0;
 }
 
@@ -185,9 +209,17 @@ char *grammar_4_1 =
 
 
 int main(int argc, char *argv[]){
+	int i;
+
 	strcpy(INPUTSTRING, grammar_4_1);
 	tokenize();
 	parse();
+
+	printf("********** SYMBOLS ***********\n");
+	for(i = 0; i < nSYMBOLS; i++){
+		printf("%2d: %s\n", i, STRING[SYMBOL[i]]);
+	}
+	printf("\n");
 
 	// START
 	initLR0();
@@ -199,9 +231,16 @@ int main(int argc, char *argv[]){
 	printitems();
 
 	printf("********* CLOSURE(I) **************\n");
-
 	I[0] = 13;
 	nIS = 1;
 	CLOSURE();
+	printJ();
+
+	printf("********* GOTO(I,X) **************\n");
+	I[0] = 1;
+	nIS = 1;
+	X = 1;
+	GOTO();
+
 	printJ();
 }
