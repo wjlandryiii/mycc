@@ -9,5 +9,6 @@ extern char *STRING[1024];
 extern int nSTRINGS;
 
 int insertString(char *s);
+int lookupString(char *s);
 
 #endif

@@ -22,3 +22,14 @@ int insertSymbol(int string, int type){
 	SYMBOLTYPE[nSYMBOLS] = type;
 	return nSYMBOLS++;
 }
+
+int lookupSymbol(int string){
+	int i;
+
+	for(i = 0; i < nSYMBOLS; i++){
+		if(SYMBOL[i] == string){
+			return i;
+		}
+	}
+	return -1;
+}

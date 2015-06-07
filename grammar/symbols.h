@@ -15,6 +15,6 @@ extern int SYMBOL[MAX_SYMBOLS];
 extern int SYMBOLTYPE[MAX_SYMBOLS];
 
 int insertSymbol(int string, int type);
-
+int lookupSymbol(int string);
 
 #endif

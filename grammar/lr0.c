@@ -186,6 +186,9 @@ static int C[MAX_SOMETHING][MAX_SOMETHING];
 static int CSIZE[MAX_SOMETHING];
 
 static int GOTO[MAX_SOMETHING][MAX_SYMBOLS];
+static int ACTION[MAX_SOMETHING][MAX_SYMBOLS];
+static int ACTIONSTATE[MAX_SOMETHING][MAX_SYMBOLS];
+static int ACTIONRULE[MAX_SOMETHING][MAX_SYMBOLS];
 
 static void items(){
 	int i, j, k, l;
@@ -200,12 +203,15 @@ static void items(){
 		}
 		for(j = 0; j < MAX_SYMBOLS; j++){
 			GOTO[i][j] = -1;
+			ACTION[i][j] = -1;
+			ACTIONSTATE[i][j] = -1;
+			ACTIONRULE[i][j] = -1;
 		}
 	}
 
 	// START
 	nIS = 0;
-	I[nIS] = 18;
+	I[nIS] = 0;
 	nIS += 1;
 	CLOSURE();
 	for(i = 0; i < nJS; i++){
@@ -218,6 +224,7 @@ static void items(){
 		changed = 0;
 		for(i = 0; i < nCS; i++){
 			for(j = 0; j < nSYMBOLS; j++){
+				int symbolType = SYMBOLTYPE[j];
 				nIS = 0;
 				for(k = 0; k < CSIZE[i]; k++){
 					I[nIS++] = C[i][k];
@@ -237,7 +244,13 @@ static void items(){
 							}
 							if(l == nJS){
 								found = 1;
-								GOTO[i][j] = k;
+								if(symbolType == SYMBOLTYPE_NONTERMINAL){
+									GOTO[i][j] = k;
+								} else if(symbolType == SYMBOLTYPE_TERMINAL){
+									ACTION[i][j] = 's';
+								} else {
+									assert(0);
+								}
 								break;
 							}
 						}
@@ -250,7 +263,13 @@ static void items(){
 							C[nCS][CSIZE[nCS]] = J[k];
 							CSIZE[nCS] += 1;
 						}
-						GOTO[i][j] = nCS;
+						if(symbolType == SYMBOLTYPE_NONTERMINAL){
+							GOTO[i][j] = nCS;
+						} else if(symbolType == SYMBOLTYPE_TERMINAL){
+							ACTION[i][j] = 's';
+						} else {
+							assert(0);
+						}
 						nCS += 1;
 						changed = 1;
 					}
@@ -308,7 +327,7 @@ void printItemSets(){
 			int dot = ITEMDOT[item];
 			int ruleSize = RULESIZE[rule];
 
-			printf("\t%2d:%2d:[dot:%2d] ", j, rule, dot);
+			printf("\t%2d:%2d:[item:%2d] [dot:%2d] ", j, rule, item, dot);
 			printf("%2s -> ", STRING[SYMBOL[RULENAME[rule]]]);
 			for(k = 0; k < ruleSize; k++){
 				printf(" %c %2s", k==dot ? '.' : ' ', STRING[SYMBOL[RULE[rule][k]]]);
@@ -346,6 +365,9 @@ char *grammar_4_1 =
 	"<Sp>\n"
 	"	: <E>\n"
 	"	;\n";
+
+
+
 
 void test_grammar_4_1(){
 	int i, j;
@@ -444,7 +466,123 @@ void test_grammar_4_1(){
 		}
 		printf("\n");
 	}
+	printf("\n");
 
+	for(i = 0; i < nCS; i++){
+		printf("I%-2d | ", i);
+		for(j = 0; j < nSYMBOLS; j++){
+			if(SYMBOLTYPE[j] == SYMBOLTYPE_TERMINAL){
+				if(ACTION[i][j] >= 0){
+					printf(" [%4s -> %c]", STRING[SYMBOL[j]], ACTION[i][j]);
+				} else {
+					printf(" [         ]");
+				}
+			}
+		}
+		printf("\n");
+	}
+	printf("\n");
+
+
+}
+
+char *grammar_3_20 =
+	"# Grammar 3.20 from 'Modern Compiler Implementation in C' page 58.\n"
+	"# This grammar is LR(0)\n"
+	"\n"
+	"<Sp>\n"
+	"	: <S> '$'\n"
+	"	;\n"
+	"\n"
+	"<S>\n"
+	"	: '(' <L> ')'\n"
+	"	| 'x'\n"
+	"	;\n"
+	"\n"
+	"<L>\n"
+	"	: <S>\n"
+	"	| <L> ',' <S>\n"
+	"	;\n";
+
+void testGrammar_3_20(){
+	int i, j;
+
+	strcpy(INPUTSTRING, grammar_3_20);
+	tokenize();
+	parse();
+
+	int Sp = lookupSymbol(lookupString("Sp"));
+	int S = lookupSymbol(lookupString("S"));
+	int L = lookupSymbol(lookupString("L"));
+
+	int dollar = lookupSymbol(lookupString("$"));
+	int x = lookupSymbol(lookupString("x"));
+	int comma = lookupSymbol(lookupString(","));
+	int lparen = lookupSymbol(lookupString("("));
+	int rparen = lookupSymbol(lookupString(")"));
+
+	// START
+	initLR0();
+
+	printf("************** ITEMS ********************\n");
+	generateItems();
+	for(i = 0; i < nITEMS; i++){
+		printItem(i);
+	}
+	printf("\n");
+
+	printf("************** CLOSURE(I) *****************\n");
+	I[0] = 0;
+	nIS = 1;
+	CLOSURE();
+	printJ();
+	printf("\n");
+
+	printf("*************** GOTOfn(I) ********************\n");
+	for(i = 0; i < nJS; i++){
+		I[i] = J[i];
+	}
+	nIS = nJS;
+	X = lparen;
+	GOTOfn();
+	printJ();
+	printf("\n");
+
+	printf("*************** ITEMS ********************\n");
+
+	items();
+	printItemSets();
+
+	printf("************* GOTO ****************\n");
+	for(i = 0; i < nCS; i++){
+		printf("I%-2d | ", i);
+		for(j = 0; j < nSYMBOLS; j++){
+			if(SYMBOLTYPE[j] == SYMBOLTYPE_NONTERMINAL){
+				if(GOTO[i][j] >= 0){
+					printf(" [%2s -> %2d]", STRING[SYMBOL[j]], GOTO[i][j]);
+				} else {
+					printf(" [        ]");
+				}
+			}
+		}
+		printf("\n");
+	}
+	printf("\n");
+
+	for(i = 0; i < nCS; i++){
+		printf("I%-2d | ", i);
+		for(j = 0; j < nSYMBOLS; j++){
+			if(SYMBOLTYPE[j] == SYMBOLTYPE_TERMINAL){
+				if(ACTION[i][j] >= 0){
+					printf(" [%4s -> %c]", STRING[SYMBOL[j]], ACTION[i][j]);
+				} else {
+					printf(" [         ]");
+				}
+			}
+		}
+		printf("\n");
+	}
+	printf("\n");
 
 }
 
@@ -456,18 +594,17 @@ void printItem(int item){
 
 	printf("{item:%2d}, {rule:%2d}, {ruleSize:%2d} {dot:%2d}, ", item, rule, ruleSize, dot);
 
-	printf("{%2s -> ", STRING[SYMBOL[RULENAME[rule]]]);
+	printf("  %2s -> ", STRING[SYMBOL[RULENAME[rule]]]);
 	for(i = 0; i < ruleSize; i++){
 		printf(" %c %2s", i==dot ? '.' : ' ', STRING[SYMBOL[RULE[rule][i]]]);
 	}
 	if(i == dot){
 		printf(" .");
 	}
-	printf("}\n");
-
-
+	printf("\n");
 }
 
 int main(int argc, char *argv[]){
-	test_grammar_4_1();
+	//test_grammar_4_1();
+	testGrammar_3_20();
 }

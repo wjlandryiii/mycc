@@ -29,7 +29,7 @@ static char *appendString(char *s){
 	}
 }
 
-static int lookupString(char *s){
+int lookupString(char *s){
 	int i;
 
 	for(i = 0; i < nSTRINGS; i++){

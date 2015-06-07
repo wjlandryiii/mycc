@@ -1,0 +1,12 @@
+# Grammar 3.20 from "Modern Compiler Implementation in C" page 58.
+# This grammar is LR(0)
+
+<S>
+	: "(" <L> ")"
+	| "x"
+	;
+
+<L>
+	: <S>
+	| <L> "," <S>
+	;
