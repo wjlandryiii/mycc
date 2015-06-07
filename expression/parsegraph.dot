@@ -1,0 +1,62 @@
+digraph {
+	node [shape = record];
+	node0 [ label = "<f0> E"];
+	node1 [ label = "<f0> T | <f1> E'"]
+	node2 [ label = "<f0> F | <f1> Tp"];
+	node3 [ label = "<f0> id"]
+	node4 [ label = "id", shape = oval, fillcolor=green, style=filled];
+	node3 -> node4
+	node2:f0 -> node3
+	node5 [ label = "<f0> \{\}"]
+	node2:f1 -> node5
+	node1:f0 -> node2
+	node6 [ label = "<f0> + | <f1> T | <f2> E'"];
+	node7 [ label = "+", shape = oval, fillcolor=green, style=filled];
+	node6:f0 -> node7
+	node8 [ label = "<f0> F | <f1> Tp"];
+	node9 [ label = "<f0> id"]
+	node10 [ label = "id", shape = oval, fillcolor=green, style=filled];
+	node9 -> node10
+	node8:f0 -> node9
+	node11 [ label = "<f0> * | <f1> F | <f2> Tp"];
+	node12 [ label = "*", shape = oval, fillcolor=green, style=filled];
+	node11:f0 -> node12
+	node13 [ label = "<f0> ( | <f1> E | <f2> )"];
+	node14 [ label = "(", shape = oval, fillcolor=green, style=filled];
+	node13:f0 -> node14
+	node15 [ label = "<f0> T | <f1> E'"]
+	node16 [ label = "<f0> F | <f1> Tp"];
+	node17 [ label = "<f0> id"]
+	node18 [ label = "id", shape = oval, fillcolor=green, style=filled];
+	node17 -> node18
+	node16:f0 -> node17
+	node19 [ label = "<f0> \{\}"]
+	node16:f1 -> node19
+	node15:f0 -> node16
+	node20 [ label = "<f0> + | <f1> T | <f2> E'"];
+	node21 [ label = "+", shape = oval, fillcolor=green, style=filled];
+	node20:f0 -> node21
+	node22 [ label = "<f0> F | <f1> Tp"];
+	node23 [ label = "<f0> id"]
+	node24 [ label = "id", shape = oval, fillcolor=green, style=filled];
+	node23 -> node24
+	node22:f0 -> node23
+	node25 [ label = "<f0> \{\}"]
+	node22:f1 -> node25
+	node20:f1 -> node22
+	node26 [ label = "<f0> \{\}"];
+	node20:f2 -> node26
+	node15:f1 -> node20
+	node13:f1 -> node15
+	node27 [ label = "(", shape = oval, fillcolor=green, style=filled];
+	node13:f2 -> node27
+	node11:f1 -> node13
+	node28 [ label = "<f0> \{\}"]
+	node11:f2 -> node28
+	node8:f1 -> node11
+	node6:f1 -> node8
+	node29 [ label = "<f0> \{\}"];
+	node6:f2 -> node29
+	node1:f1 -> node6
+	node0 -> node1
+}
