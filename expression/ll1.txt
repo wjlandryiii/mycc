@@ -1,0 +1,40 @@
+TERMINAL 'id'
+TERMINAL '+'
+TERMINAL '*'
+TERMINAL '('
+TERMINAL ']'
+TERMINAL '$'
+
+NONTERMINAL <E>
+NONTERMINAL <E'>
+NONTERMINAL <T>
+NONTERMINAL <T'>
+NONTERMINAL <F>
+
+STARTSYMBOL <E>
+
+EOFSYMBOL '$'
+
+RULE <E>  : <T> <E'>
+RULE <E'> : '+' <T> <E'>
+RULE <E'> : {}
+RULE <T>  : <F> <T'>
+RULE <T'> : '*' <F> <T'>
+RULE <T'> : {}
+RULE <F>  : '(' E ')'
+RULE <F>  : 'id'
+
+PARSETABLE <E>  'id' : <T> <E'>
+PARSETABLE <E>  '('  : <T> <E'>
+PARSETABLE <E'> '+'  : '+' <T> <E'>
+PARSETABLE <E'> ')'  : {}
+PARSETABLE <T>  'id' : <F> <T'>
+PARSETABLE <T>  '('  : <F> <T'>
+PARSETABLE <T'> '+'  : {}
+PARSETABLE <T'> '*'  : '*' <F> <T'>
+PARSETABLE <T'> ')'  : {}
+PARSETABLE <T'> '$'  : {}
+PARSETABLE <F>  'id' : 'id'
+PARSETABLE <F>  '('  : '(' <E> ')'
+
+INPUTSTRING 'id' '+' 'id' '*' '(' 'id' '+' 'id' ')' '$'
