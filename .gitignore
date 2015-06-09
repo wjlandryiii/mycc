@@ -14,3 +14,4 @@ grammar/main
 grammar/lr0
 expression/ll1
 expression/ll1table
+regex/regex
