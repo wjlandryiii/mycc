@@ -2,37 +2,11 @@
  * Copyright 2015 Joseph Landry All Rights Reserved
  */
 
-/*
-<regex>
-	: <term> | <regex
-	| <term>
-	;
-
-<term>
-	: <factor>
-	| {}
-	;
-
-<factor>
-	: <base> <factorP>
-	;
-
-<factorP>
-	: '*' factorP
-	|
-	;
-
-<base>
-	: <char>
-	| '\' <char>
-	| "(" <regex> ")"
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-char *inputString = "(.)aaa(bbb)";
+char *inputString = "(.)+a(z|q)at?|a(bbbb)*";
 int inputIndex = 0;
 int lookAhead;
 
@@ -41,7 +15,12 @@ int nextToken(){
 	if(lookAhead < 0){
 		fprintf(stderr, "only supports ASCII\n");
 		exit(1);
+	} else if(lookAhead != '\0'){
+		printf("****  NEXT TOKEN: %c : %s $\n", lookAhead, &inputString[inputIndex]);
+	} else {
+		printf("****  NEXT TOKEN: $\n");
 	}
+
 	return 0;
 }
 
@@ -67,45 +46,109 @@ int isMetaChar(int c){
 	}
 }
 
+void parse_re();
+void parse_union_();
+void parse_simple_re();
+void parse_concatenation();
+void parse_basic_re();
+void parse_basic_re_prime();
+void parse_elementary_re();
+void parse_group();
+void parse_any();
+void parse_eos();
+void parse_character();
+void parse_set();
 
+void parse_re(){
+	printf("<re> : <simple_re> <union_>\n");
+	parse_simple_re();
+	parse_union_();
+}
 
-void elementary_re();
-void group();
-void any();
-void eos();
-void character();
-void set();
+void parse_union_(){
+	if(lookAhead == '|'){
+		printf("<union_> : '|' <simple_re> <union_>\n");
+		nextToken();
+		parse_simple_re();
+		parse_union_();
+	} else if(lookAhead != ')' && lookAhead != '\0'){
+		printf("<union_> : {}\n");
+	}
+}
 
+void parse_simple_re(){
+	if(lookAhead != ')' && lookAhead != '|' && lookAhead != '\0'){ // TODO: compute FIRST set of <concatenation>
+		printf("\t<simple_re> : <basic_re> <concatenation>\n");
+		parse_basic_re();
+		parse_concatenation();
+	} else {
+		fprintf(stderr, "invalid simple_re\n");
+	}
+}
 
-void elementary_re(){
-	printf("elementary_re(): %d\n", inputIndex);
+void parse_concatenation(){
+	if(lookAhead != ')' && lookAhead != '|' && lookAhead != '\0'){ // TODO: compute FIRST set of <basic_re>
+		printf("\t<concatenation> : <basic_re> <concatenation>\n");
+		parse_basic_re();
+		parse_concatenation();
+	} else {
+		printf("\t<concatenation> : {}\n");
+	}
+}
 
+void parse_basic_re(){
+	printf("\t<basic_re> : <elementary_re> <basic_re_prime>\n");
+	parse_elementary_re();
+	parse_basic_re_prime();
+}
+
+void parse_basic_re_prime(){
+	if(lookAhead == '*'){
+		printf("\t<basic_re_prime> : '*' <basic_re_prime>\n");
+		nextToken();
+		parse_basic_re_prime();
+	} else if(lookAhead == '+'){
+		printf("\t<basic_re_prime> : '+' <basic_re_prime>\n");
+		nextToken();
+		parse_basic_re_prime();
+	} else if(lookAhead == '?'){
+		printf("\t<basic_re_prime> : '?' <basic_re_prime>\n");
+		nextToken();
+		parse_basic_re_prime();
+	} else {
+		// sigma production
+		printf("\t<basic_re_prime> : {}\n");
+		;
+	}
+}
+
+void parse_elementary_re(){
 	if(lookAhead == '('){
-		group();
+		printf("\t<elementary_re> : <group>\n");
+		parse_group();
 	} else if(lookAhead == '.'){
-		//<any>
-		any();
+		printf("\t<elementary_re> : <any>\n");
+		parse_any();
 	} else if(lookAhead == '$'){
-		// eos
-		eos();
+		printf("\t<elementary_re> : <eos>\n");
+		parse_eos();
 	} else if(!isMetaChar(lookAhead) || lookAhead == '\\'){
-		// char
-		character();
+		printf("\t<elementary_re> : <character>\n");
+		parse_character();
 	} else if(lookAhead == '['){
-		// set
-		set();
+		printf("\t<elementary_re> : <set>\n");
+		parse_set();
 	} else {
 		fprintf(stderr, "invalid elementary_re\n");
 		exit(1);
 	}
 }
 
-void group(){
-	printf("group(): %d\n", inputIndex);
-
+void parse_group(){
 	if(lookAhead == '('){
+		printf("\t<group> : '(' <basic_re> ')'\n");
 		nextToken();
-		elementary_re();
+		parse_re();
 		if(lookAhead == ')'){
 			nextToken();
 		} else {
@@ -118,10 +161,9 @@ void group(){
 	}
 }
 
-void any(){
-	printf("any(): %d\n", inputIndex);
-
+void parse_any(){
 	if(lookAhead == '.'){
+		printf("\t<any> : '.'\n");
 		nextToken();
 	} else {
 		fprintf(stderr, "invalid any\n");
@@ -129,10 +171,9 @@ void any(){
 	}
 }
 
-void eos(){
-	printf("eos(): %d\n", inputIndex);
-
+void parse_eos(){
 	if(lookAhead == '$'){
+		printf("\t<eof> : '$'\n");
 		nextToken();
 	} else {
 		fprintf(stderr, "invalid eos\n");
@@ -140,12 +181,12 @@ void eos(){
 	}
 }
 
-void character(){
-	printf("character(): %d\n", inputIndex);
-
+void parse_character(){
 	if(!isMetaChar(lookAhead)){
+		printf("\t<character> : <nonmetachar>\n");
 		nextToken();
 	} else if(lookAhead == '\\'){
+		printf("\t<character> : '\\' <metachar>\n");
 		nextToken();
 		if(isMetaChar(lookAhead)){
 			nextToken();
@@ -159,15 +200,14 @@ void character(){
 	}
 }
 
-void set(){
-	printf("set(): %d\n", inputIndex);
-
+void parse_set(){
+	printf("<set> : ???\n");
 	fprintf(stderr, "not implemented: set\n");
 	exit(1);
 }
 
 int main(int argc, char *argv[]){
 	nextToken();
-	elementary_re();
+	parse_re();
 	printf("%d\n", inputIndex);
 }

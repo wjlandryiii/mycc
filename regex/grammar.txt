@@ -1,0 +1,56 @@
+# This grammar is based off of the PERL regex grammar.
+# This grammar is (TODO: verify it is) LL(1).
+
+<re>
+	: <simple_re> <union_>
+	;
+
+<union_>
+	: '|' <simple_re> <union_>
+	| {}
+	;
+
+<simple_re>
+	: <basic_re> <concatenation>
+	;
+
+<concatenation>
+	: <basic_re> <concatenation>
+	| {}
+	;
+
+<basic_re>
+	: <elementary_re> <basic_re_prime>
+	;
+
+<basic_re_prime>
+	: '*' <basic_re_prime>
+	| '+' <basic_re_prime>
+	| '?' <basic_re_prime>
+	| {}
+	;
+
+<elementary_re>
+	: <group>
+	| <any>
+	| <eos>
+	| <character>
+	| <set>
+	;
+
+<group>
+	: '(' <root_re> ')'
+	;
+
+<any>
+	: '.'
+	;
+
+<eos>
+	: '$'
+	;
+
+<character>
+	: <nonmetachar>
+	| '\' <metachar>
+	;
