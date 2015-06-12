@@ -1,6 +1,7 @@
 *.o
 *.swp
 *.dSYM*
+*out.png
 lexer
 parser
 shuntingyard

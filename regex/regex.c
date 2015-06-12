@@ -11,13 +11,8 @@
 int main(int argc, char *argv[]){
 	int result;
 
-	strcpy(REGEXSTRING, "(.)+a(z|q)at?|a(bbbb)*");
+	strcpy(REGEXSTRING, "(a.)+\\.a(z|q)at?|a(bbbb)*");
 	result = parse();
 
-	if(result == 0){
-		printf("Successful parse!\n");
-	} else {
-		printf("Parse was unsuccessful\n");
-	}
 	return 0;
 }

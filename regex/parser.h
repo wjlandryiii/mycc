@@ -17,8 +17,11 @@ struct any;
 struct eos;
 struct character;
 struct set;
+struct set_prime;
+struct set_items;
 struct nonmetachar;
 struct metachar;
+
 
 
 struct re {
@@ -82,18 +85,31 @@ struct character {
 	int rule;
 	struct nonmetachar *nonmetachar;
 	struct metachar *metachar;
+	int token;
 };
 
 struct set {
+	int rule;
+	struct set_prime *set_prime;
+};
+
+struct set_prime {
+	int rule;
+	struct set_items *set_items;
+};
+
+struct set_items {
 	int rule;
 };
 
 struct nonmetachar {
 	int rule;
+	char token;
 };
 
 struct metachar {
 	int rule;
+	char token;
 };
 
 
