@@ -17,8 +17,10 @@ struct any;
 struct eos;
 struct character;
 struct set;
-struct set_prime;
+struct positive_set;
+struct negagive_set;
 struct set_items;
+struct range;
 struct nonmetachar;
 struct metachar;
 
@@ -90,16 +92,32 @@ struct character {
 
 struct set {
 	int rule;
-	struct set_prime *set_prime;
+	struct positive_set *positive_set;
+	struct negative_set *negative_set;
 };
 
-struct set_prime {
+
+struct positive_set {
+	int rule;
+	struct set_items *set_items;
+};
+
+struct negative_set {
 	int rule;
 	struct set_items *set_items;
 };
 
 struct set_items {
 	int rule;
+	struct set_items *set_items;
+	struct range *range;
+	struct character *character;
+};
+
+struct range {
+	int rule;
+	struct character *leftCharacter;
+	struct character *rightCharacter;
 };
 
 struct nonmetachar {

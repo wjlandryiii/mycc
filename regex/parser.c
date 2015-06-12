@@ -13,19 +13,25 @@ char REGEXSTRING[MAX_REGEXSTRING];
 struct re *PARSETREE = NULL;
 
 static int lookAhead;
+static int lookAhead2;
+static int lookAhead3;
 static int inputIndex;
 
 static int nextToken(){
 	lookAhead = REGEXSTRING[inputIndex++];
+	lookAhead2 = REGEXSTRING[inputIndex];
+	lookAhead3 = REGEXSTRING[inputIndex+1];
 	if(lookAhead < 0){
 		fprintf(stderr, "only supports ASCII\n");
 		exit(1);
-	} else if(lookAhead != '\0'){
-		//printf("****  NEXT TOKEN: %c : %s $\n", lookAhead, &REGEXSTRING[inputIndex]);
-	} else {
-		//printf("****  NEXT TOKEN: $\n");
 	}
 
+	if(lookAhead == 0){
+		lookAhead2 = 0;
+		lookAhead3 = 0;
+	} else if(lookAhead2 == 0){
+		lookAhead3 = 0;
+	}
 	return 0;
 }
 
@@ -66,7 +72,10 @@ static int parse_character(struct character **character);
 static int parse_nonmetachar(struct nonmetachar **nonmetacharOut);
 static int parse_metachar(struct metachar **metacharOut);
 static int parse_set(struct set **set);
-static int parse_set_prime(struct set_prime **set_prime);
+static int parse_positive_set(struct positive_set **positive_set);
+static int parse_negative_set(struct negative_set **negative_set);
+static int parse_set_items(struct set_items **set_items);
+static int parse_range(struct range **range);
 
 static int parse_re(struct re **reOut){
 	struct re re;
@@ -398,16 +407,12 @@ static int parse_metachar(struct metachar **metacharOut){
 static int parse_set(struct set **setOut){
 	struct set set;
 
-	if(lookAhead == '['){
+	if(lookAhead == '[' && lookAhead2 != '^'){
 		set.rule = 1;
-		nextToken();
-		parse_set_prime(&set.set_prime);
-		if(lookAhead == ']'){
-			nextToken();
-		} else {
-			fprintf(stderr, "expected ']'\n");
-			exit(1);
-		}
+		parse_positive_set(&set.positive_set);
+	} else if(lookAhead == '[' && lookAhead2 == '^'){
+		set.rule = 2;
+		parse_negative_set(&set.negative_set);
 	} else {
 		fprintf(stderr, "expected '['\n");
 		exit(1);
@@ -419,11 +424,103 @@ static int parse_set(struct set **setOut){
 	return 0;
 }
 
-static int parse_set_prime(struct set_prime **set_prime){
+static int parse_positive_set(struct positive_set **positive_set_out){
+	struct positive_set positive_set;
 
+	if(lookAhead == '[' && lookAhead2 != '^'){
+		positive_set.rule = 1;
+		nextToken();
+		parse_set_items(&positive_set.set_items);
+		if(lookAhead == ']'){
+			nextToken();
+		} else {
+			fprintf(stderr, "expected ']'\n");
+			exit(1);
+		}
+	} else {
+		fprintf(stderr, "expected '[' !'^'\n");
+		exit(1);
+	}
+
+	if(positive_set_out){
+		*positive_set_out = calloc(1, sizeof(struct positive_set));
+		**positive_set_out = positive_set;
+	}	
 	return 0;
 }
 
+static int parse_negative_set(struct negative_set **negative_set_out){
+	struct negative_set negative_set;
+	
+	if(lookAhead == '[' && lookAhead2 == '^'){
+		negative_set.rule = 1;
+		nextToken();
+		nextToken();
+		parse_set_items(&negative_set.set_items);
+		if(lookAhead == ']'){
+			nextToken();
+		} else {
+			fprintf(stderr, "expected ']'\n");
+			exit(1);
+		}
+	} else {
+		fprintf(stderr, "expected '[' '^'\n");
+		exit(1);
+	}
+
+	if(negative_set_out){
+		*negative_set_out = calloc(1, sizeof(struct negative_set));
+		**negative_set_out = negative_set;
+	}	
+	return 0;
+}
+
+static int parse_set_items(struct set_items **set_items_out){
+	struct set_items set_items;
+
+	if((lookAhead != ']')
+			&& ( (lookAhead != '\\' && lookAhead2 == '-')
+				|| (lookAhead == '\\' && lookAhead3 == '-'))){
+		set_items.rule = 1;
+		parse_range(&set_items.range);
+		parse_set_items(&set_items.set_items);
+	} else if((lookAhead != ']')){
+		set_items.rule = 2;
+		parse_character(&set_items.character);
+		parse_set_items(&set_items.set_items);
+	} else if(lookAhead == ']'){
+		set_items.rule = 3;
+	} else {
+		fprintf(stderr, "parse_set_items don't know what rule to take.\n");
+		exit(1);
+	}
+
+	if(set_items_out){
+		*set_items_out = calloc(1, sizeof(struct set_items));
+		**set_items_out = set_items;
+	}
+	return 0;
+}
+
+static int parse_range(struct range **range_out){
+	struct range range;
+
+	range.rule = 1;
+	parse_character(&range.leftCharacter);
+	if(lookAhead == '-'){
+		nextToken();	
+		parse_character(&range.rightCharacter);
+	} else {
+		fprintf(stderr, "expected '-'\n");
+		exit(1);
+	}
+
+	if(range_out){
+		*range_out = calloc(1, sizeof(struct range));
+		**range_out = range;
+	}
+	return 0;
+}
 
 
 static int graphwalkNode = 0;
@@ -442,6 +539,10 @@ static int graphwalk_any(struct any *any);
 static int graphwalk_eos(struct eos *eos);
 static int graphwalk_character(struct character *character);
 static int graphwalk_set(struct set *set);
+static int graphwalk_positive_set(struct positive_set *positive_set);
+static int graphwalk_negative_set(struct negative_set *negative_set);
+static int graphwalk_set_items(struct set_items *set_items);
+static int graphwalk_range(struct range *range);
 static int graphwalk_nonmetachar(struct nonmetachar *nonmetachar);
 static int graphwalk_metachar(struct metachar *metachar);
 
@@ -459,6 +560,10 @@ static int emitNode(char *firstField, ...){
 	while(s){
 		printf(" | <f%d> %s", i++, s);
 		s = va_arg(args, char *);
+		if(i >= 20){
+			fprintf(stderr, "programmer error in use of emitNode()\n");
+			exit(1);
+		}
 	}
 	va_end(args);
 	printf("\"]\n");
@@ -644,7 +749,7 @@ static int graphwalk_elementary_re(struct elementary_re *elementary_re){
 		emitEdge(node, 0, child0);
 		return node;
 	} else if(rule == 5){
-		node = emitNode("\\<set\\>");
+		node = emitNode("\\<set\\>", 0);
 		child0 = graphwalk_set(elementary_re->set);
 		emitEdge(node, 0, child0);
 		return node;
@@ -726,9 +831,115 @@ static int graphwalk_character(struct character *character){
 }
 
 static int graphwalk_set(struct set *set){
-	fprintf(stderr, "set not implemented!\n");
-	exit(1);
-	return 0;
+	int node;
+	int child0;
+
+	if(set->rule == 1){
+		node = emitNode("\\<positive-set\\>", 0);
+		child0 = graphwalk_positive_set(set->positive_set);
+		emitEdge(node, 0, child0);
+		return node;
+	} else if(set->rule == 2){
+		node = emitNode("\\<negative-set\\>", 0);
+		child0 = graphwalk_negative_set(set->negative_set);
+		emitEdge(node, 0, child0);
+		return node;
+	} else {
+		fprintf(stderr, "invalid set rule: %d\n", set->rule);
+		exit(1);
+	}
+}
+
+static int graphwalk_positive_set(struct positive_set *positive_set){
+	int node;
+	int child0;
+	int child1;
+	int child2;
+
+	if(positive_set->rule == 1){
+		node = emitNode("\\[", "\\<set-items\\>", "\\]", 0);
+		child0 = emitLeafNode("'\\['");
+		child1 = graphwalk_set_items(positive_set->set_items);
+		child2 = emitLeafNode("'\\]'");
+		emitEdge(node, 0, child0);
+		emitEdge(node, 1, child1);
+		emitEdge(node, 2, child2);
+		return node;
+	} else {
+		fprintf(stderr, "invalid positive_set rule: %d\n", positive_set->rule);
+		exit(1);
+	}
+}
+
+static int graphwalk_negative_set(struct negative_set *negative_set){
+	int node;
+	int child0;
+	int child1;
+	int child2;
+	int child3;
+
+	if(negative_set->rule == 1){
+		node = emitNode("\\[", "^", "\\<set-items\\>", "\\]", 0);
+		child0 = emitLeafNode("'\\['");
+		child1 = emitLeafNode("'^'");
+		child2 = graphwalk_set_items(negative_set->set_items);
+		child3 = emitLeafNode("'\\]'");
+		emitEdge(node, 0, child0);
+		emitEdge(node, 1, child1);
+		emitEdge(node, 2, child2);
+		emitEdge(node, 3, child3);
+		return node;
+	} else {
+		fprintf(stderr, "invalid positive_set rule: %d\n", negative_set->rule);
+		exit(1);
+	}
+
+}
+
+static int graphwalk_set_items(struct set_items *set_items){
+	int node;
+	int child0, child1;
+
+	if(set_items->rule == 1){
+		node = emitNode("\\<range\\>", "\\<set-items\\>", 0);
+		child0 = graphwalk_range(set_items->range);	
+		child1 = graphwalk_set_items(set_items->set_items);
+		emitEdge(node, 0, child0);
+		emitEdge(node, 1, child1);
+		return node;
+	} else if(set_items->rule == 2){
+		node = emitNode("\\<character\\>", "\\<set-items\\>", 0);
+		child0 = graphwalk_character(set_items->character);
+		child1 = graphwalk_set_items(set_items->set_items);
+		emitEdge(node, 0, child0);
+		emitEdge(node, 1, child1);
+		return node;
+	} else if(set_items->rule == 3){
+		node = emitNode("\\{\\}", 0);
+		return node;
+	} else {
+		fprintf(stderr, "invalid set_items rule: %d\n", set_items->rule);
+		exit(1);
+	}
+}
+
+static int graphwalk_range(struct range *range){
+	int node;
+	int child0, child1, child2;
+
+	if(range->rule == 1){
+		node = emitNode("\\<character\\>", "'-'", "\\<character\\>", 0);
+		child0 = graphwalk_character(range->leftCharacter);
+		child1 = emitLeafNode("-");
+		child2 = graphwalk_character(range->rightCharacter);
+		emitEdge(node, 0, child0);
+		emitEdge(node, 1, child1);
+		emitEdge(node, 2, child2);
+		return node;
+	} else {
+		fprintf(stderr, "invalid range rule: %d\n", range->rule);
+		exit(1);
+	}
 }
 
 static int graphwalk_nonmetachar(struct nonmetachar *nonmetachar){

@@ -97,10 +97,24 @@
 	;
 
 <set>
-	: "[" <set'> "]"
+	: <positive-set>
+	| <negative-set>
 	;
 
-<set'>
-	: "^" <set-items>
-	| <set-items>
+<positive-set>
+	: "[" <set-items> "]"
+	;
+
+<negative-set>
+	: "[" "^" <set-items> "]"
+	;
+
+<set-items>
+	: <range> <set-items>
+	| <character> <set-items>
+	| {}
+	;
+	
+<range>
+	: <character> "-" <character>
 	;
