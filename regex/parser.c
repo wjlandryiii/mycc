@@ -978,10 +978,15 @@ static int graphwalk_metachar(struct metachar *metachar){
 
 
 int graphwalk(){
+	int node;
+	int child0;
+
 	graphwalkNode = 0;
 	printf("digraph G {\n");
 	printf("\tnode [shape=record]\n");
-	graphwalk_re(PARSETREE);
+	node = emitNode("re", 0);
+	child0 = graphwalk_re(PARSETREE);
+	emitEdge(node, 0, child0);
 	printf("}\n");
 	return 0;
 }
