@@ -16,11 +16,14 @@ struct transition {
 
 struct nfa {
 	int startingState;
+	int acceptingState;
 	int states;
 	struct transition transitions[1024];
 	int nTransitions;
+	/*
 	int acceptingStates[1024];
 	int nAcceptingStates;
+	*/
 };
 
 struct nfa elementaryOneCharacter(char c);
