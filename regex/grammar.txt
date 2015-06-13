@@ -20,10 +20,10 @@
 	;
 
 <basic_re>
-	: <elementary_re> <repeat-op>
+	: <elementary_re> <repeat>
 	;
 
-<repeat_op>
+<repeat>
 	: '*'
 	| '+'
 	| '?'

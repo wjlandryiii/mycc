@@ -146,13 +146,13 @@ static void ast_repeat(
 		struct ast_node *inherit,
 		struct ast_node **synth){
 
-	if(item->rule == 1){
-		notImplemented("repeat", item->rule);
-	} else if(item->rule == 2){
-		notImplemented("repeat", item->rule);
-	} else if(item->rule == 3){
-		notImplemented("repeat", item->rule);
-	} else if(item->rule == 4){
+	if(item->rule == 1){ // STAR
+		*synth = astUnaryNode(OP_STAR, inherit);
+	} else if(item->rule == 2){ // PLUS
+		*synth = astUnaryNode(OP_PLUS, inherit);
+	} else if(item->rule == 3){ // QUESTIONMARK
+		*synth = astUnaryNode(OP_QUESTIONMARK, inherit);
+	} else if(item->rule == 4){ // SIGMA
 		*synth = inherit;		
 	} else {
 		invalidRule("repeat", item->rule);
@@ -244,7 +244,17 @@ static int graph(struct ast_node *node){
 		emitEdge(n, c2);
 		return n;
 	} else if(node->op == OP_STAR){
-		n = emitNode("star");
+		n = emitNode("*");
+		c1 = graph(node->child1);
+		emitEdge(n, c1);
+		return n;
+	} else if(node->op == OP_PLUS){
+		n = emitNode("+");
+		c1 = graph(node->child1);
+		emitEdge(n, c1);
+		return n;
+	} else if(node->op == OP_QUESTIONMARK){
+		n = emitNode("?");
 		c1 = graph(node->child1);
 		emitEdge(n, c1);
 		return n;

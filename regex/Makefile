@@ -14,3 +14,9 @@ ast.o: ast.c ast.h
 
 regex: regex.o parser.o nfa.o ast.o
 	gcc -g -o $@ $^
+
+.PHONY: clean
+
+clean:
+	rm -f *.o
+	rm regex
