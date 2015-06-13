@@ -63,7 +63,7 @@ static int parse_union(struct union_ **unionOut);
 static int parse_simple_re(struct simple_re **simple_reOut);
 static int parse_concatenation(struct concatenation **concatenation);
 static int parse_basic_re(struct basic_re **basic_re);
-static int parse_basic_re_prime(struct basic_re_prime **basic_re_prime);
+static int parse_repeat(struct repeat **repeateOut);
 static int parse_elementary_re(struct elementary_re **elementary_re);
 static int parse_group(struct group **group);
 static int parse_any(struct any **any);
@@ -184,10 +184,9 @@ static int parse_concatenation(struct concatenation **concatenationOut){
 static int parse_basic_re(struct basic_re **basicReOut){
 	struct basic_re basic_re;
 
-	//printf("\t<basic_re> : <elementary_re> <basic_re_prime>\n");
 	basic_re.rule = 1;
 	parse_elementary_re(&basic_re.elementary_re);
-	parse_basic_re_prime(&basic_re.basic_re_prime);
+	parse_repeat(&basic_re.repeat);
 
 	if(basicReOut){
 		*basicReOut = calloc(1, sizeof(struct basic_re));
@@ -201,35 +200,26 @@ static int parse_basic_re(struct basic_re **basicReOut){
 	return 0;
 }
 
-static int parse_basic_re_prime(struct basic_re_prime **basicRePrimeOut){
-	struct basic_re_prime basic_re_prime = {0};
+static int parse_repeat(struct repeat **repeatOut){
+	struct repeat repeat = {0};
 
 	if(lookAhead == '*'){
-		basic_re_prime.rule = 1;
-		//printf("\t<basic_re_prime> : '*' <basic_re_prime>\n");
+		repeat.rule = 1;
 		nextToken();
-		parse_basic_re_prime(&basic_re_prime.basic_re_prime);
 	} else if(lookAhead == '+'){
-		basic_re_prime.rule = 2;
-		//printf("\t<basic_re_prime> : '+' <basic_re_prime>\n");
+		repeat.rule = 2;
 		nextToken();
-		parse_basic_re_prime(&basic_re_prime.basic_re_prime);
 	} else if(lookAhead == '?'){
-		basic_re_prime.rule = 3;
-		//printf("\t<basic_re_prime> : '?' <basic_re_prime>\n");
+		repeat.rule = 3;
 		nextToken();
-		parse_basic_re_prime(&basic_re_prime.basic_re_prime);
 	} else {
-		// sigma production
-		basic_re_prime.rule = 4;
-		//printf("\t<basic_re_prime> : {}\n");
-		;
+		repeat.rule = 4;
 	}
 
-	if(basicRePrimeOut){
-		*basicRePrimeOut = calloc(1, sizeof(struct basic_re_prime));
-		if(*basicRePrimeOut){
-			**basicRePrimeOut = basic_re_prime;
+	if(repeatOut){
+		*repeatOut = calloc(1, sizeof(struct repeat));
+		if(*repeatOut){
+			**repeatOut = repeat;
 		} else {
 			fprintf(stderr, "memory error\n");
 			exit(1);
@@ -532,7 +522,7 @@ static int graphwalk_union(struct union_ *union_);
 static int graphwalk_simple_re(struct simple_re *simple_re);
 static int graphwalk_concatenation(struct concatenation *concatenation);
 static int graphwalk_basic_re(struct basic_re *basic_re);
-static int graphwalk_basic_re_prime(struct basic_re_prime *basic_re_prime);
+static int graphwalk_repeat(struct repeat *repeat);
 static int graphwalk_elementary_re(struct elementary_re *elementary_re);
 static int graphwalk_group(struct group *group);
 static int graphwalk_any(struct any *any);
@@ -670,14 +660,14 @@ static int graphwalk_concatenation(struct concatenation *concatenation){
 static int graphwalk_basic_re(struct basic_re *basic_re){
 	int node;
 	int elementary_re_node;
-	int basic_re_prime;
+	int repeat;
 
 	if(basic_re->rule == 1){
-		node = emitNode("elementary_re", "basic_re_prime", 0);
+		node = emitNode("elementary_re", "repeat", 0);
 		elementary_re_node = graphwalk_elementary_re(basic_re->elementary_re);
-		basic_re_prime = graphwalk_basic_re_prime(basic_re->basic_re_prime);
+		repeat = graphwalk_repeat(basic_re->repeat);
 		emitEdge(node, 0, elementary_re_node);
-		emitEdge(node, 1, basic_re_prime);
+		emitEdge(node, 1, repeat);
 		return node;
 	} else {
 		fprintf(stderr, "invalid rule: basic_re: %d\n", basic_re->rule);
@@ -686,38 +676,31 @@ static int graphwalk_basic_re(struct basic_re *basic_re){
 	return 0;
 }
 
-static int graphwalk_basic_re_prime(struct basic_re_prime *basic_re_prime){
+static int graphwalk_repeat(struct repeat *repeat){
 	int node;
-	int rule = basic_re_prime->rule;
+	int rule = repeat->rule;
 	int child0;
-	int child1;
 
 	if(rule == 1){
-		node = emitNode("'*'", "basic_re_prime", 0);
+		node = emitNode("'*'", 0);
 		child0 = emitLeafNode("*");
-		child1 = graphwalk_basic_re_prime(basic_re_prime->basic_re_prime);
 		emitEdge(node, 0, child0);
-		emitEdge(node, 1, child1);
 		return node;
 	} else if(rule == 2){
-		node = emitNode("'+'", "basic_re_prime", 0);
+		node = emitNode("'+'", 0);
 		child0 = emitLeafNode("+");
-		child1 = graphwalk_basic_re_prime(basic_re_prime->basic_re_prime);
 		emitEdge(node, 0, child0);
-		emitEdge(node, 1, child1);
 		return node;
 	} else if(rule == 3){
-		node = emitNode("'?'", "basic_re_prime", 0);
+		node = emitNode("'?'", 0);
 		child0 = emitLeafNode("?");
-		child1 = graphwalk_basic_re_prime(basic_re_prime->basic_re_prime);
 		emitEdge(node, 0, child0);
-		emitEdge(node, 1, child1);
 		return node;
 	} else if(rule == 4){
 		node = emitNode("\\{\\}", 0);
 		return node;
 	} else {
-		fprintf(stderr, "invalid rule: basic_re_prime: %d\n", rule);
+		fprintf(stderr, "invalid rule: repeat: %d\n", rule);
 		exit(1);
 	}
 	return 0;

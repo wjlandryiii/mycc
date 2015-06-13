@@ -42,11 +42,15 @@ void test_nfa(void){
 }
 
 void test_ast(void){
-	strcpy(REGEXSTRING, "AB|C");
+	strcpy(REGEXSTRING, "(A*B*C*)?");
 	parse();
-	//graphParseTree();
-	computeAST();
-	graphAST();
+
+	if(1){
+		graphParseTree();
+	} else {
+		computeAST();
+		graphAST();
+	}
 }
 
 int main(int argc, char *argv[]){

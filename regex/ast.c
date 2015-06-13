@@ -49,8 +49,8 @@ static void ast_concatenation(struct concatenation *concatenation,
 		struct ast_node *inherit,
 		struct ast_node **synth);
 static void ast_basic_re(struct basic_re *basic_re, struct ast_node **synth);
-static void ast_basic_re_prime(
-		struct basic_re_prime *item,
+static void ast_repeat(
+		struct repeat *item,
 		struct ast_node *inherit,
 		struct ast_node **synth);
 static void ast_elementary_re(struct elementary_re *item, struct ast_node **synth);
@@ -127,35 +127,35 @@ static void ast_concatenation(struct concatenation *concatenation,
 static void ast_basic_re(struct basic_re *basic_re, struct ast_node **synth){
 	int rule = basic_re->rule;	
 	struct ast_node *elementary_synth;
-	struct ast_node *basic_re_prime_synth;
+	struct ast_node *repeat_synth;
 
 	if(rule == 1){
 		ast_elementary_re(basic_re->elementary_re, &elementary_synth);
-		ast_basic_re_prime(
-				basic_re->basic_re_prime,
+		ast_repeat(
+				basic_re->repeat,
 				elementary_synth,
-				&basic_re_prime_synth);
-		*synth = basic_re_prime_synth;
+				&repeat_synth);
+		*synth = repeat_synth;
 	} else {
 		invalidRule("basic_re", rule);
 	}
 }
 
-static void ast_basic_re_prime(
-		struct basic_re_prime *item,
+static void ast_repeat(
+		struct repeat *item,
 		struct ast_node *inherit,
 		struct ast_node **synth){
 
 	if(item->rule == 1){
-		notImplemented("basic_re_prime", item->rule);
+		notImplemented("repeat", item->rule);
 	} else if(item->rule == 2){
-		notImplemented("basic_re_prime", item->rule);
+		notImplemented("repeat", item->rule);
 	} else if(item->rule == 3){
-		notImplemented("basic_re_prime", item->rule);
+		notImplemented("repeat", item->rule);
 	} else if(item->rule == 4){
 		*synth = inherit;		
 	} else {
-		invalidRule("basic_re_prime", item->rule);
+		invalidRule("repeat", item->rule);
 	}
 }
 

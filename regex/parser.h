@@ -10,7 +10,7 @@ struct union_;
 struct simple_re;
 struct concatenation;
 struct basic_re;
-struct basic_re_prime;
+struct repeat;
 struct elementary_re;
 struct group;
 struct any;
@@ -53,12 +53,11 @@ struct concatenation {
 struct basic_re {
 	int rule;
 	struct elementary_re *elementary_re;
-	struct basic_re_prime *basic_re_prime;
+	struct repeat *repeat;
 };
 
-struct basic_re_prime {
+struct repeat {
 	int rule;
-	struct basic_re_prime *basic_re_prime;
 };
 
 struct elementary_re {

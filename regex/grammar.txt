@@ -20,13 +20,13 @@
 	;
 
 <basic_re>
-	: <elementary_re> <basic_re_prime>
+	: <elementary_re> <repeat-op>
 	;
 
-<basic_re_prime>
-	: '*' <basic_re_prime>
-	| '+' <basic_re_prime>
-	| '?' <basic_re_prime>
+<repeat_op>
+	: '*'
+	| '+'
+	| '?'
 	| {}
 	;
 
