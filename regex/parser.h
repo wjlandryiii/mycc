@@ -136,5 +136,6 @@ extern char REGEXSTRING[MAX_REGEXSTRING];
 extern struct re *PARSETREE;
 
 int parse();
+int graphParseTree();
 
 #endif

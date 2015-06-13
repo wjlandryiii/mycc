@@ -8,6 +8,7 @@
 
 #include "parser.h"
 #include "nfa.h"
+#include "ast.h"
 
 void test_regex(void){
 	int result;
@@ -18,8 +19,9 @@ void test_regex(void){
 	strcpy(REGEXSTRING, "a[^ABC-M]b");
 	strcpy(REGEXSTRING, "a[^AB\\?-M]b");
 	strcpy(REGEXSTRING, "abc+[d-z]?");
-	strcpy(REGEXSTRING, "A|B");
+	strcpy(REGEXSTRING, "a");
 	result = parse();
+	graphParseTree();
 }
 
 void test_nfa(void){
@@ -39,8 +41,17 @@ void test_nfa(void){
 	*/
 }
 
+void test_ast(void){
+	strcpy(REGEXSTRING, "AB|C");
+	parse();
+	//graphParseTree();
+	computeAST();
+	graphAST();
+}
+
 int main(int argc, char *argv[]){
-	test_regex();
+	//test_regex();
+	test_ast();
 
 	return 0;
 }

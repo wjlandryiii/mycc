@@ -977,19 +977,6 @@ static int graphwalk_metachar(struct metachar *metachar){
 }
 
 
-int graphwalk(){
-	int node;
-	int child0;
-
-	graphwalkNode = 0;
-	printf("digraph G {\n");
-	printf("\tnode [shape=record]\n");
-	node = emitNode("re", 0);
-	child0 = graphwalk_re(PARSETREE);
-	emitEdge(node, 0, child0);
-	printf("}\n");
-	return 0;
-}
 
 int parse(){
 	int result;
@@ -1003,10 +990,22 @@ int parse(){
 	result = parse_re(&re);
 	if(result == 0){
 		PARSETREE = re;
-		//graphwalk_re(PARSETREE);
-		graphwalk();
 		return 0;
 	} else {
 		return result;
 	}
+}
+
+int graphParseTree(){
+	int node;
+	int child0;
+
+	graphwalkNode = 0;
+	printf("digraph G {\n");
+	printf("\tnode [shape=record]\n");
+	node = emitNode("re", 0);
+	child0 = graphwalk_re(PARSETREE);
+	emitEdge(node, 0, child0);
+	printf("}\n");
+	return 0;
 }

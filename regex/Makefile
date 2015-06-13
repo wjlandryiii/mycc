@@ -9,5 +9,8 @@ parser.o: parser.c parser.h
 nfa.o: nfa.c nfa.h
 	gcc -g -c -o $@ $<
 
-regex: regex.o parser.o nfa.o
+ast.o: ast.c ast.h
+	gcc -g -c -o $@ $<
+
+regex: regex.o parser.o nfa.o ast.o
 	gcc -g -o $@ $^
