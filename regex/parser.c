@@ -673,7 +673,7 @@ static int graphwalk_basic_re(struct basic_re *basic_re){
 	int basic_re_prime;
 
 	if(basic_re->rule == 1){
-		node = emitNode("basic_re", "elementary_re", 0);
+		node = emitNode("elementary_re", "basic_re_prime", 0);
 		elementary_re_node = graphwalk_elementary_re(basic_re->elementary_re);
 		basic_re_prime = graphwalk_basic_re_prime(basic_re->basic_re_prime);
 		emitEdge(node, 0, elementary_re_node);
