@@ -27,6 +27,44 @@ struct nfa elementaryOneCharacter(char c){
 	return nfa;
 }
 
+struct nfa elementaryAny(){
+	int i;
+	struct nfa nfa;
+
+	nfa.states = 2;
+	nfa.startingState = 0;
+	nfa.acceptingState = 1;
+	nfa.nTransitions = 0;
+
+	// TODO: what range is really any?
+	for(i = 0x20; i < 0x7F; i++){
+		nfa.transitions[nfa.nTransitions++] = Transition(
+				nfa.startingState,
+				nfa.acceptingState,
+				i);
+	}
+	return nfa;
+}
+
+struct nfa elementarySet(char *set){
+	int i;
+	struct nfa nfa;
+
+	nfa.states = 2;
+	nfa.startingState = 0;
+	nfa.acceptingState = 1;
+	nfa.nTransitions = 0;
+	for(i = 0; i < 128; i++){
+		if(set[i]){
+			nfa.transitions[nfa.nTransitions++] = Transition(
+					nfa.startingState,
+					nfa.acceptingState,
+					i);
+		}
+	}
+	return nfa;
+}
+
 struct nfa nfaUnion(struct nfa *nfaA, struct nfa *nfaB){
 	int i;
 	struct nfa nfa;
@@ -150,7 +188,7 @@ int graphNFA(const struct nfa *nfa){
 					nfa->transitions[i].from,
 					nfa->transitions[i].to);
 		} else {
-			printf("\ts%d -> s%d [label = \"%c\"]\n",
+			printf("\ts%d -> s%d [label = \"0x%02x\"]\n",
 					nfa->transitions[i].from,
 					nfa->transitions[i].to,
 					nfa->transitions[i].symbol);

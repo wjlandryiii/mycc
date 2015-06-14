@@ -15,7 +15,10 @@ enum OPS {
 	OP_STAR,
 	OP_PLUS,
 	OP_QUESTIONMARK,
+	OP_METACHAR,
 	OP_LITERAL,
+	OP_ANY,
+	OP_EOS,
 };
 
 struct ast_node {

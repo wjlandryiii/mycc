@@ -27,12 +27,9 @@ void test_regex(void){
 void test_nfa(void){
 	int i;
 
-	struct nfa nfaA = elementaryOneCharacter('A');
-	struct nfa nfaB = elementaryOneCharacter('B');
-	struct nfa nfaC = elementaryOneCharacter('C');
-	struct nfa nfaD = nfaUnion(&nfaA, &nfaB);
-	struct nfa nfaE = nfaUnion(&nfaD, &nfaC);
-	graphNFA(&nfaE);
+	struct nfa nfaAny = elementaryAny();
+	
+	graphNFA(&nfaAny);
 	/*
 	struct nfa nfaD = elementaryOneCharacter('B');
 	struct nfa nfaE = nfaConcatenation(&nfaC, &nfaD);
@@ -42,7 +39,9 @@ void test_nfa(void){
 }
 
 void test_ast(void){
-	strcpy(REGEXSTRING, "A*B+C?");
+	strcpy(REGEXSTRING, "\\.*|(012)?");
+	strcpy(REGEXSTRING, "a+b@+a+(\\.c+)+");
+	strcpy(REGEXSTRING, "aba.b$");
 	parse();
 
 	if(0){
@@ -55,7 +54,8 @@ void test_ast(void){
 
 int main(int argc, char *argv[]){
 	//test_regex();
-	test_ast();
+	test_nfa();
+	//test_ast();
 
 	return 0;
 }

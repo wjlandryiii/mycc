@@ -20,13 +20,12 @@ struct nfa {
 	int states;
 	struct transition transitions[1024];
 	int nTransitions;
-	/*
-	int acceptingStates[1024];
-	int nAcceptingStates;
-	*/
 };
 
 struct nfa elementaryOneCharacter(char c);
+struct nfa elementaryAny();
+struct nfa elementarySet(char *set);
+
 struct nfa nfaUnion(struct nfa *nfaA, struct nfa *nfaB);
 struct nfa nfaConcatenation(struct nfa *nfaA, struct nfa *nfaB);
 struct nfa nfaStar(struct nfa *nfaA);

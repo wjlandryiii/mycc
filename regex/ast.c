@@ -54,8 +54,12 @@ static void ast_repeat(
 		struct ast_node *inherit,
 		struct ast_node **synth);
 static void ast_elementary_re(struct elementary_re *item, struct ast_node **synth);
+static void ast_group(struct group *item, struct ast_node **synth);
+static void ast_any(struct any *item, struct ast_node **synth);
+static void ast_eos(struct eos *item, struct ast_node **synth);
 static void ast_character(struct character *item, struct ast_node **synth);
 static void ast_nonmetachar(struct nonmetachar *item, struct ast_node **synth);
+static void ast_metachar(struct metachar *item, struct ast_node **synth);
 
 
 static void ast_re(struct re *re, struct ast_node **synth){
@@ -160,18 +164,42 @@ static void ast_repeat(
 }
 
 static void ast_elementary_re(struct elementary_re *item, struct ast_node **synth){
-	if(item->rule == 1){
-		notImplemented("elementary_re", item->rule);
-	} else if(item->rule == 2){
-		notImplemented("elementary_re", item->rule);
-	} else if(item->rule == 3){
-		notImplemented("elementary_re", item->rule);
-	} else if(item->rule == 4){
+	if(item->rule == 1){ // <group>
+		ast_group(item->group, synth);
+	} else if(item->rule == 2){ // <any>
+		ast_any(item->any, synth);
+	} else if(item->rule == 3){ // <eos>
+		ast_eos(item->eos, synth);
+	} else if(item->rule == 4){ // <character>
 		ast_character(item->character, synth);
-	} else if(item->rule == 5){
+	} else if(item->rule == 5){ // <set>
 		notImplemented("elementary_re", item->rule);
 	} else {
 		invalidRule("elementary_re", item->rule);
+	}
+}
+
+static void ast_group(struct group *item, struct ast_node **synth){
+	if(item->rule == 1){
+		ast_re(item->re, synth);
+	} else {
+		invalidRule("group", item->rule);
+	}
+}
+
+static void ast_any(struct any *item, struct ast_node **synth){
+	if(item->rule == 1){
+		*synth = astLeafNode(OP_ANY, '.');
+	} else {
+		invalidRule("any", item->rule);
+	}
+}
+
+static void ast_eos(struct eos *item, struct ast_node **synth){
+	if(item->rule == 1){
+		*synth = astLeafNode(OP_EOS, '$');
+	} else {
+		invalidRule("any", item->rule);
 	}
 }
 
@@ -179,7 +207,7 @@ static void ast_character(struct character *item, struct ast_node **synth){
 	if(item->rule == 1){
 		ast_nonmetachar(item->nonmetachar, synth);
 	} else if(item->rule == 2){
-		notImplemented("character", item->rule);
+		ast_metachar(item->metachar, synth);
 	} else {
 		invalidRule("character", item->rule);
 	}
@@ -190,6 +218,16 @@ static void ast_nonmetachar(struct nonmetachar *item, struct ast_node **synth){
 		*synth = astLeafNode(OP_LITERAL, item->token);
 	} else {
 		invalidRule("nonmetachar", item->rule);
+	}
+}
+
+static void ast_metachar(struct metachar *item, struct ast_node **synth){
+	struct ast_node *leaf;
+	if(item->rule == 1){
+		leaf = astLeafNode(OP_LITERAL, item->token);
+		*synth = astUnaryNode(OP_METACHAR, leaf);
+	} else {
+		invalidRule("metachar", item->rule);
 	}
 }
 
@@ -258,7 +296,18 @@ static int graph(struct ast_node *node){
 		c1 = graph(node->child1);
 		emitEdge(n, c1);
 		return n;
+	} else if(node->op == OP_METACHAR){
+		n = emitNode("metachar");
+		c1 = graph(node->child1);
+		emitEdge(n, c1);
+		return n;
 	} else if(node->op == OP_LITERAL){
+		n = emitLeafNode(node->value);
+		return n;
+	} else if(node->op == OP_ANY){
+		n = emitLeafNode(node->value);
+		return n;
+	} else if(node->op == OP_EOS){
 		n = emitLeafNode(node->value);
 		return n;
 	} else {
