@@ -5,16 +5,35 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "nfa.h"
 
-static struct transition Transition(int from, int to, char symbol){
-	struct transition transition;
+static void nfaAddTransition(struct nfa *nfa, int from, int to, int symbol){
+	int i;
+	int t;
 
-	transition.from = from;
-	transition.to = to;
-	transition.symbol = symbol;
-	return transition;
+	assert(0 <= symbol && symbol < 256);
+
+	for(i = 0; i < nfa->nTransitions; i++){
+		if(nfa->transitions[i].from == from && nfa->transitions[i].to == to){
+			nfa->transitions[i].symbols[symbol] = 1;
+			return;
+		}
+	}
+
+	assert(nfa->nTransitions < 1024);
+
+	t = nfa->nTransitions;
+	nfa->nTransitions += 1;
+
+	nfa->transitions[t].from = from;
+	nfa->transitions[t].to = to;
+	for(i = 0; i < 256; i++){
+		nfa->transitions[t].symbols[i] = 0;
+	}
+	nfa->transitions[t].symbols[symbol] = 1;
+	return;
 }
 
 struct nfa elementaryOneCharacter(char c){
@@ -22,8 +41,7 @@ struct nfa elementaryOneCharacter(char c){
 	nfa.states = 2;
 	nfa.startingState = 0;
 	nfa.acceptingState = 1;
-	nfa.transitions[0] = Transition(0, 1, c);
-	nfa.nTransitions = 1;
+	nfaAddTransition(&nfa, nfa.startingState, nfa.acceptingState, c);
 	return nfa;
 }
 
@@ -38,10 +56,7 @@ struct nfa elementaryAny(){
 
 	// TODO: what range is really any?
 	for(i = 0x20; i < 0x7F; i++){
-		nfa.transitions[nfa.nTransitions++] = Transition(
-				nfa.startingState,
-				nfa.acceptingState,
-				i);
+		nfaAddTransition(&nfa, nfa.startingState, nfa.acceptingState, i);
 	}
 	return nfa;
 }
@@ -56,69 +71,61 @@ struct nfa elementarySet(char *set){
 	nfa.nTransitions = 0;
 	for(i = 0; i < 128; i++){
 		if(set[i]){
-			nfa.transitions[nfa.nTransitions++] = Transition(
-					nfa.startingState,
-					nfa.acceptingState,
-					i);
+			nfaAddTransition(&nfa, nfa.startingState, nfa.acceptingState, i);
 		}
 	}
 	return nfa;
 }
 
 struct nfa nfaUnion(struct nfa *nfaA, struct nfa *nfaB){
-	int i;
+	int i, j;
 	struct nfa nfa;
 	int aShift;
 	int bShift;
-	int newStartingState;
 	int newAcceptingState;
 
 	aShift = 1;
 	bShift = 1 + nfaA->states;
 	newAcceptingState = 1 + nfaA->states + nfaB->states;
-	newStartingState = 0;
 
 	nfa.states = 1 + nfaA->states + nfaB->states + 1;
 	nfa.startingState = 0;
 	nfa.acceptingState = 1 + nfaA->states + nfaB->states;
-	nfa.nTransitions = 0;	
-	nfa.transitions[nfa.nTransitions++] = Transition(
-			newStartingState,
-			aShift + nfaA->startingState,
-			NFAEPSILON);
-	nfa.transitions[nfa.nTransitions++] = Transition(
-			0,
-			bShift + nfaB->startingState,
-			NFAEPSILON);
+	nfa.nTransitions = 0;
+	nfaAddTransition(&nfa, nfa.startingState, aShift + nfaA->startingState, NFAEPSILON);
+	nfaAddTransition(&nfa, nfa.startingState, bShift + nfaB->startingState, NFAEPSILON);
 
 	for(i = 0; i < nfaA->nTransitions; i++){
-		nfa.transitions[nfa.nTransitions++] = Transition(
-				aShift + nfaA->transitions[i].from,
-				aShift + nfaA->transitions[i].to,
-				nfaA->transitions[i].symbol);
+		for(j = 0; j < 256; j++){
+			if(nfaA->transitions[i].symbols[j]){
+				nfaAddTransition(
+						&nfa,
+						aShift + nfaA->transitions[i].from,
+						aShift + nfaA->transitions[i].to,
+						j);
+			}
+		}
 	}
 
 	for(i = 0; i < nfaB->nTransitions; i++){
-		nfa.transitions[nfa.nTransitions++] = Transition(
-				bShift + nfaB->transitions[i].from,
-				bShift + nfaB->transitions[i].to,
-				nfaB->transitions[i].symbol);
+		for(j = 0; j < 256; j++){
+			if(nfaB->transitions[i].symbols[j]){
+				nfaAddTransition(
+						&nfa,
+						bShift + nfaB->transitions[i].from,
+						bShift + nfaB->transitions[i].to,
+						j);
+			}
+		}
 	}
 
-	nfa.transitions[nfa.nTransitions++] = Transition(
-			aShift + nfaA->acceptingState,
-			newAcceptingState,
-			NFAEPSILON);
-
-	nfa.transitions[nfa.nTransitions++] = Transition(
-			bShift + nfaB->acceptingState,
-			newAcceptingState,
-			NFAEPSILON);
+	nfaAddTransition(&nfa, aShift + nfaA->acceptingState, nfa.acceptingState, NFAEPSILON);
+	nfaAddTransition(&nfa, bShift + nfaB->acceptingState, nfa.acceptingState, NFAEPSILON);
 	return nfa;
 }
 
 struct nfa nfaConcatenation(struct nfa *nfaA, struct nfa *nfaB){
-	int i;
+	int i, j;
 	struct nfa nfa;
 	int aShift = 0;
 	int bShift = nfaA->states;
@@ -128,18 +135,25 @@ struct nfa nfaConcatenation(struct nfa *nfaA, struct nfa *nfaB){
 
 	nfa.nTransitions = 0;
 	for(i = 0; i < nfaA->nTransitions; i++){
-		nfa.transitions[nfa.nTransitions++] = nfaA->transitions[i];
+		for(j = 0; j < 256; j++){
+			nfaAddTransition(
+					&nfa, 
+					nfaA->transitions[i].from, 
+					nfaA->transitions[i].to,
+					j);
+		}
 	}
 	for(i = 0; i < nfaB->nTransitions; i++){
-		nfa.transitions[nfa.nTransitions++] = Transition(
-				bShift + nfaB->transitions[i].from,
-				bShift + nfaB->transitions[i].to,
-				nfaB->transitions[i].symbol);
+		for(j = 0; j < 256; j++){
+			nfaAddTransition(
+					&nfa, 
+					bShift + nfaB->transitions[i].from,
+					bShift + nfaB->transitions[i].to,
+					j);
+		}
 	}
-	nfa.transitions[nfa.nTransitions++] = Transition(
-			nfaA->acceptingState,
-			bShift + nfaB->startingState,
-			NFAEPSILON);
+
+	nfaAddTransition(&nfa, nfaA->acceptingState, bShift + nfaB->startingState, NFAEPSILON);
 	nfa.acceptingState = bShift + nfaB->acceptingState;
 	return nfa;
 }
@@ -151,18 +165,14 @@ struct nfa nfaStar(struct nfa *nfaA){
 
 	memcpy(&nfa, nfaA, sizeof(nfa));
 
-	nfa.transitions[nfa.nTransitions++] = Transition(
-			nfa.startingState,
-			nfa.acceptingState,
-			NFAEPSILON);
-	nfa.transitions[nfa.nTransitions++] = Transition(
-			nfa.acceptingState,
-			nfa.startingState,
-			NFAEPSILON);
+	nfaAddTransition(&nfa, nfa.startingState, nfa.acceptingState, NFAEPSILON);
+	nfaAddTransition(&nfa, nfa.acceptingState, nfa.startingState, NFAEPSILON);
+
 	nfa.startingState = nfa.acceptingState;
 
 	return nfa;
 }
+
 
 
 int graphNFA(const struct nfa *nfa){
@@ -183,15 +193,19 @@ int graphNFA(const struct nfa *nfa){
 	printf("\n");
 
 	for(i = 0; i < nfa->nTransitions; i++){
-		if(nfa->transitions[i].symbol == NFAEPSILON){
-			printf("\ts%d -> s%d [label = \"\\{\\}\"]\n",
-					nfa->transitions[i].from,
-					nfa->transitions[i].to);
-		} else {
-			printf("\ts%d -> s%d [label = \"0x%02x\"]\n",
-					nfa->transitions[i].from,
-					nfa->transitions[i].to,
-					nfa->transitions[i].symbol);
+		for(j = 0; j < 256; j++){
+			if(nfa->transitions[i].symbols[j]){
+				if(j == NFAEPSILON){
+					printf("\ts%d -> s%d [label = \"\\{\\}\"]\n",
+							nfa->transitions[i].from,
+							nfa->transitions[i].to);
+				} else {
+					printf("\ts%d -> s%d [label = \"0x%02x\"]\n",
+							nfa->transitions[i].from,
+							nfa->transitions[i].to,
+							j);
+				}
+			}
 		}
 	}
 	printf("\n");

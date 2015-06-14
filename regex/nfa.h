@@ -6,12 +6,12 @@
 #define NFA_H
 
 
-#define NFAEPSILON (-1)
+#define NFAEPSILON (128)
 
 struct transition {
 	int from;
 	int to;
-	char symbol;
+	char symbols[256];
 };
 
 struct nfa {
