@@ -28,7 +28,13 @@ struct ast_node {
 	struct ast_node *child2;
 };
 
+
+struct ast_node *astBinaryNode(int op, struct ast_node *child1, struct ast_node *child2);
+struct ast_node *astUnaryNode(int op, struct ast_node *child1);
+struct ast_node *astLeafNode(int op, int value);
+
+
 int computeAST(void);
-void graphAST(void);
+void graphAST(struct ast_node *node);
 
 #endif

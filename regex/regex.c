@@ -23,6 +23,21 @@ void test_regex(void){
 	graphParseTree();
 }
 
+
+void test_ast(void){
+	struct ast_node *node;
+
+	node = astBinaryNode(OP_CONCAT,
+			astLeafNode(OP_LITERAL, 'A'),
+			astBinaryNode(OP_CONCAT, 
+				astLeafNode(OP_LITERAL, 'B'),
+				astLeafNode(OP_LITERAL, 'C')));
+	
+
+	graphAST(node);	
+}
+
+
 void test_nfa(){
 	int test = 2;
 
@@ -42,20 +57,6 @@ void test_nfa(){
 		graphNFA(&nfa);
 	} else if(test == 3){
 		
-	}
-}
-
-void test_ast(void){
-	strcpy(REGEXSTRING, "\\.*|(012)?");
-	strcpy(REGEXSTRING, "a+b@+a+(\\.c+)+");
-	strcpy(REGEXSTRING, "aba.b$");
-	parse();
-
-	if(0){
-		graphParseTree();
-	} else {
-		computeAST();
-		graphAST();
 	}
 }
 

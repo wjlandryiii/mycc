@@ -10,7 +10,7 @@
 
 struct ast_node *AST;
 
-static struct ast_node *astBinaryNode(int op, struct ast_node *child1, struct ast_node *child2){
+struct ast_node *astBinaryNode(int op, struct ast_node *child1, struct ast_node *child2){
 	struct ast_node *node = calloc(1, sizeof(struct ast_node));
 	node->op = op;
 	node->child1 = child1;
@@ -18,14 +18,14 @@ static struct ast_node *astBinaryNode(int op, struct ast_node *child1, struct as
 	return node;
 }
 
-static struct ast_node *astUnaryNode(int op, struct ast_node *child1){
+struct ast_node *astUnaryNode(int op, struct ast_node *child1){
 	struct ast_node *node = calloc(1, sizeof(struct ast_node));
 	node->op = op;
 	node->child1 = child1;
 	return node;
 }
 
-static struct ast_node *astLeafNode(int op, int value){
+struct ast_node *astLeafNode(int op, int value){
 	struct ast_node *node = calloc(1, sizeof(struct ast_node));
 	node->op = op;
 	node->value = value;
@@ -316,12 +316,12 @@ static int graph(struct ast_node *node){
 	}
 }
 
-void graphAST(){
+void graphAST(struct ast_node *node){
 	int n;
 
 	nodeNumber = 0;
 	printf("digraph G {\n");
 	printf("\tnode [shape=record]\n");
-	n = graph(AST);
+	n = graph(node);
 	printf("}\n");
 }
