@@ -37,7 +37,7 @@ static void nfaAddTransition(struct nfa *nfa, int from, int to, int symbol){
 }
 
 struct nfa elementaryOneCharacter(char c){
-	struct nfa nfa;
+	struct nfa nfa = {0};
 	nfa.states = 2;
 	nfa.startingState = 0;
 	nfa.acceptingState = 1;
@@ -58,6 +58,7 @@ struct nfa elementaryAny(){
 	for(i = 0x20; i < 0x7F; i++){
 		nfaAddTransition(&nfa, nfa.startingState, nfa.acceptingState, i);
 	}
+	fprintf(stderr, "die\n");
 	return nfa;
 }
 
@@ -136,20 +137,24 @@ struct nfa nfaConcatenation(struct nfa *nfaA, struct nfa *nfaB){
 	nfa.nTransitions = 0;
 	for(i = 0; i < nfaA->nTransitions; i++){
 		for(j = 0; j < 256; j++){
-			nfaAddTransition(
-					&nfa, 
-					nfaA->transitions[i].from, 
-					nfaA->transitions[i].to,
-					j);
+			if(nfaA->transitions[i].symbols[j]){
+				nfaAddTransition(
+						&nfa, 
+						nfaA->transitions[i].from, 
+						nfaA->transitions[i].to,
+						j);
+			}
 		}
 	}
 	for(i = 0; i < nfaB->nTransitions; i++){
 		for(j = 0; j < 256; j++){
-			nfaAddTransition(
-					&nfa, 
-					bShift + nfaB->transitions[i].from,
-					bShift + nfaB->transitions[i].to,
-					j);
+			if(nfaB->transitions[i].symbols[j]){
+				nfaAddTransition(
+						&nfa, 
+						bShift + nfaB->transitions[i].from,
+						bShift + nfaB->transitions[i].to,
+						j);
+			}
 		}
 	}
 
@@ -174,6 +179,44 @@ struct nfa nfaStar(struct nfa *nfaA){
 }
 
 
+void graphTransition(const struct transition *t){
+	int i, j;
+
+	int ranges[256];
+	int nRanges = 0;
+
+	for(i = 0; i < 256; i++){
+		if(t->symbols[i]){
+			ranges[nRanges*2] = i;
+			if(i < 255 && t->symbols[i+1]){
+				for(j = i+1; j < 256; j++){
+					if(!t->symbols[j]){
+						break;
+					}
+				}
+				ranges[nRanges*2+1] = j-1;
+				i = j;
+			} else {
+				ranges[nRanges*2+1] = i;
+			}
+			nRanges++;
+		}
+	}
+
+	printf("\ts%d -> s%d [label = \"[", t->from, t->to);
+
+	for(i = 0; i < nRanges; i++){
+		if(i>0){
+			printf(",");
+		}
+		if(ranges[i*2] == ranges[i*2+1]){
+			printf("0x%02x", ranges[i*2]);
+		} else {
+			printf("0x%02x-0x%02x", ranges[i*2], ranges[i*2+1]);
+		}
+	}
+	printf("]\"]\n");
+}
 
 int graphNFA(const struct nfa *nfa){
 	int i, j;
@@ -193,20 +236,7 @@ int graphNFA(const struct nfa *nfa){
 	printf("\n");
 
 	for(i = 0; i < nfa->nTransitions; i++){
-		for(j = 0; j < 256; j++){
-			if(nfa->transitions[i].symbols[j]){
-				if(j == NFAEPSILON){
-					printf("\ts%d -> s%d [label = \"\\{\\}\"]\n",
-							nfa->transitions[i].from,
-							nfa->transitions[i].to);
-				} else {
-					printf("\ts%d -> s%d [label = \"0x%02x\"]\n",
-							nfa->transitions[i].from,
-							nfa->transitions[i].to,
-							j);
-				}
-			}
-		}
+		graphTransition(&nfa->transitions[i]);
 	}
 	printf("\n");
 	printf("}\n");

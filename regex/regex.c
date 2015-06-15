@@ -19,23 +19,30 @@ void test_regex(void){
 	strcpy(REGEXSTRING, "a[^ABC-M]b");
 	strcpy(REGEXSTRING, "a[^AB\\?-M]b");
 	strcpy(REGEXSTRING, "abc+[d-z]?");
-	strcpy(REGEXSTRING, "a");
 	result = parse();
 	graphParseTree();
 }
 
-void test_nfa(void){
-	int i;
+void test_nfa(){
+	int test = 2;
 
-	struct nfa nfaAny = elementaryAny();
-	
-	graphNFA(&nfaAny);
-	/*
-	struct nfa nfaD = elementaryOneCharacter('B');
-	struct nfa nfaE = nfaConcatenation(&nfaC, &nfaD);
-	struct nfa nfaF = nfaStar(&nfaE);
-	graphNFA(&nfaF);
-	*/
+	if(test == 0){
+		struct nfa nfa = elementaryOneCharacter('A');
+		graphNFA(&nfa);
+	} else if(test == 1){
+		struct nfa nfa = elementaryAny();
+		graphNFA(&nfa);
+	} else if(test == 2){
+		char set[128] = {0};
+		set['I'] = 1;
+		set['J'] = 1;
+		set['K'] = 1;
+		set['Z'] = 1;
+		struct nfa nfa = elementarySet(set);
+		graphNFA(&nfa);
+	} else if(test == 3){
+		
+	}
 }
 
 void test_ast(void){
@@ -54,8 +61,8 @@ void test_ast(void){
 
 int main(int argc, char *argv[]){
 	//test_regex();
-	test_nfa();
-	//test_ast();
+	test_ast();
+	//test_nfa();
 
 	return 0;
 }
