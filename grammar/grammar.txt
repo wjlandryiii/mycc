@@ -207,9 +207,9 @@
 	| <direct-abstract-declarator> "(" <parameter-type-list> ")"
 	;
 
-<typedef-name>
-	: "%IDENTIFIER%"
-	;
+# <typedef-name>
+#	: "%IDENTIFIER%"
+#	;
 
 <statement>
 	: <labeled-statement>
