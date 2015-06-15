@@ -53,7 +53,7 @@
 	| "unsigned"
 	| <struct-or-union-specifier>
 	| <enum-specifier>
-	| <typedef-name>
+	| "%TYPEDEF-NAME%"
 	;
 
 <type-qualifier>
