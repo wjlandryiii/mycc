@@ -6,10 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 
 
-int setUnion(int *dst, int size, int *n, int *s1, int n1, int *s2, int n2){
+int setUnion(int *dst, const int size, int *n, const int *s1, const int n1, const int *s2, const int n2){
 	// Merge algorithm
 	int i, j;
 	i = j = 0;
@@ -47,6 +48,44 @@ int setUnion(int *dst, int size, int *n, int *s1, int n1, int *s2, int n2){
 	return 0;
 }
 
+int setUnionInplace(int *dst, const int size, int *n, const int *s1, const int n1){
+	int i, j, k;
+
+	i = j = 0;
+
+
+	while(i < *n || j < n1){
+		if(*n >= size){
+			fprintf(stderr, "bump set size\n");
+			exit(1);
+		}
+		if(i < *n && j < n1){
+			if(dst[i] == s1[j]){
+				i += 1;
+				j += 1;
+			} else if(dst[i] < s1[j]){
+				i += 1;
+			} else if(dst[i] > s1[j]){
+				for(k = *n; k > i; k--){
+					dst[k] = dst[k-1];
+				}
+				*n += 1;
+				dst[i] = s1[j];
+				i += 1;
+				j += 1;
+			}
+		} else if(i < *n){
+			break;
+		} else if(j < n1){
+			dst[i] = s1[j];
+			*n += 1;
+			i += 1;
+			j += 1;
+		}
+	}
+	return 0;
+}
+
 
 
 enum OPERATIONS {
@@ -72,48 +111,19 @@ struct ast_node {
 	int nFollowPos;
 };
 
-void setFollowPos(struct ast_node *node, int leafNumber, struct ast_node *firstNode){
-	int i, j, k;
+struct ast_node *leafIndex[128];
+int leafCount = 1;
 
-	if(node->leafNumber == leafNumber){
-		i = j = 0;
-		while(i < node->nFollowPos || j < firstNode->nFirstPos){
-			if(node->nFollowPos >= 32){
-				fprintf(stderr, "bump followpos\n");
-				exit(1);
-			}
-			if(i < node->nFollowPos && j < firstNode->nFirstPos){
-				if(node->followPos[i] == firstNode->firstPos[j]){
-					i += 1;
-					j += 1;
-				} else if(node->followPos[i] < firstNode->firstPos[j]){
-					i += 1;
-				} else if(node->followPos[i] > firstNode->firstPos[j]){
-					for(k = node->nFollowPos; k > i; k--){
-						node->followPos[k] = node->followPos[k-1];
-					}
-					node->nFollowPos += 1;
-					node->followPos[i] = firstNode->firstPos[j];
-					i += 1;
-					j += 1;
-				}
-			} else if(i < node->nFollowPos){
-				break;
-			} else if(j < firstNode->nFirstPos){
-				node->followPos[node->nFollowPos] = firstNode->firstPos[j];
-				node->nFollowPos += 1;
-				i += 1;
-				j += 1;
-			}
-		}
-	} else {
-		if(node->child0){
-			setFollowPos(node->child0, leafNumber, firstNode);
-		}
-		if(node->child1){
-			setFollowPos(node->child1, leafNumber, firstNode);
-		}
-	}
+void setFollowPos(int leafNumber, struct ast_node *firstNode){
+	int i, j, k;
+	struct ast_node *node;
+
+	i = j = 0;
+
+	node = leafIndex[leafNumber];
+	assert(leafNumber < leafCount);
+
+	setUnionInplace(node->followPos, 32, &node->nFollowPos, firstNode->firstPos, firstNode->nFirstPos);
 }
 
 
@@ -183,7 +193,7 @@ struct ast_node *astCatNode(struct ast_node *child0, struct ast_node *child1){
 
 	// followpos
 	for(i = 0; i < child0->nLastPos; i++){
-		setFollowPos(child0, child0->lastPos[i], child1);
+		setFollowPos(child0->lastPos[i], child1);
 	}
 	return n;
 }
@@ -215,38 +225,46 @@ struct ast_node *astStarNode(struct ast_node *child){
 	// followpos
 	n->nFollowPos = 0;
 	for(i = 0; i < n->nLastPos; i++){
-		setFollowPos(n->child0, n->lastPos[i], n);
+		setFollowPos(n->lastPos[i], n);
 	}
 	return n;
 }
 
 
-int leafCount = 1;
-
 struct ast_node *astLiteralNode(char c){
 	struct ast_node *n = calloc(1, sizeof(struct ast_node));
+
+	assert(leafCount < 128);
 
 	n->op = OP_LITERAL;
 	n->c = c;
 	n->nullable = 0;
-	n->leafNumber = leafCount++;
+	n->leafNumber = leafCount;
 	n->firstPos[0] = n->leafNumber;
 	n->nFirstPos = 1;
 	n->lastPos[0] = n->leafNumber;
 	n->nLastPos = 1;
 	n->nFollowPos = 0;
+
+	leafIndex[leafCount++] = n;
+
 	return n;
 }
 
 struct ast_node *astEpsilonNode(){
 	struct ast_node *n = calloc(1, sizeof(struct ast_node));
 
+	assert(leafCount < 128);
+
 	n->op = OP_EPSILON;
 	n->nullable = 1;
-	n->leafNumber = leafCount++;
+	n->leafNumber = leafCount;
 	n->nFirstPos = 0;
 	n->nLastPos = 0;
 	n->nFollowPos = 0;
+
+	leafIndex[leafCount++] = n;
+
 	return n;
 }
 
@@ -472,6 +490,125 @@ void printAST(struct ast_node *node){
 	}
 }
 
+struct DState {
+	int marked;
+	int list[32];
+	int nList;
+	int accepting;
+};
+
+struct DState DStates[128];
+int nDStates;
+
+int DTrans[32][128];
+
+void makeDFA(struct ast_node *n){
+	int allMarked;
+	int i, j, k, l;
+
+	nDStates = 1;
+	DStates[0].marked = 0;
+	for(i = 0; i < n->nFirstPos; i++){
+		DStates[0].list[i] = n->firstPos[i];
+	}
+	DStates[0].accepting = 0;
+	DStates[0].nList = n->nFirstPos;
+
+	for(i = 0; i < 32; i++){
+		for(j = 0; j < 128; j++){
+			DTrans[i][j] = -1;
+		}
+	}
+
+	for(i = 0; i < nDStates; i++){
+		if(!DStates[i].marked){
+			DStates[i].marked = 1;
+
+			for(j = 0; j < DStates[i].nList; j++){
+				if(leafIndex[DStates[i].list[j]]->c == '#'){
+					DStates[i].accepting = 1;
+				}
+			}
+
+			int u[32];
+			int nu = 0;
+
+			for(j = 0; j < 128; j++){
+				nu = 0;
+				for(k = 0; k < DStates[i].nList; k++){
+					if(j == leafIndex[DStates[i].list[k]]->c){
+						setUnionInplace(u, 32, &nu, leafIndex[DStates[i].list[k]]->followPos, leafIndex[DStates[i].list[k]]->nFollowPos);
+					}
+				}
+
+
+				if(nu > 0){
+					for(k = 0; k < nDStates; k++){
+						if(DStates[k].nList == nu){
+							for(l = 0; l < DStates[k].nList; l++){
+								if(DStates[k].list[l] != u[l]){
+									break;
+								}
+							}
+							if(l == DStates[k].nList){
+								break;
+							}
+						}
+					}
+					if(k != nDStates){
+						DTrans[i][j] = k;
+					} else {
+						for(k = 0; k < nu; k++){
+							DStates[nDStates].list[k] = u[k];
+						}
+						DStates[nDStates].marked = 0;
+						DStates[nDStates].nList = nu;
+						DStates[nDStates].accepting = 0;
+						DTrans[i][j] = nDStates;
+						nDStates += 1;
+					}
+				}
+
+			}
+
+		}
+	}
+
+}
+
+void graphDFA(){
+	int i, j;
+
+	printf("digraph G {\n");
+	printf("\trankdir = LR\n");
+
+	for(i = 0; i < nDStates; i++){
+		printf("\tnode%d [label=\"[", i);
+		for(j = 0; j < DStates[i].nList; j++){
+			printf(" %d", DStates[i].list[j]);
+		}
+		printf(" ]\"");
+		if(DStates[i].accepting){
+			printf(", shape=doublecircle");
+		} else {
+			printf(", shape=circle");
+		}
+		printf("]\n");
+	}
+
+	for(i = 0; i < nDStates; i++){
+		for(j = 0; j < 128; j++){
+			if(DTrans[i][j] >= 0){
+				printf("\tnode%d -> node%d [label=\"%c\"]\n", i, DTrans[i][j], j);
+			}
+		}
+	}
+
+	printf("}\n");
+
+
+}
+
 
 void test_regex1(){
 	struct ast_node *node;
@@ -480,8 +617,13 @@ void test_regex1(){
 	lookAheadIndex = 0;
 	nextToken();
 	node = orLevel();
-	graphAST(node);
+
+	//graphAST(node);
+
 	//printAST(node);
+
+	makeDFA(node);
+	graphDFA();
 }
 
 int main(int argc, char *argv[]){
