@@ -9,7 +9,6 @@
 #include <assert.h>
 
 
-
 int setUnion(int *dst, const int size, int *n, const int *s1, const int n1, const int *s2, const int n2){
 	// Merge algorithm
 	int i, j;
@@ -84,6 +83,22 @@ int setUnionInplace(int *dst, const int size, int *n, const int *s1, const int n
 		}
 	}
 	return 0;
+}
+
+
+int setIsEqual(const int *s1, const int n1, const int *s2, const int n2){
+	int i;
+
+	if(n1 != n2){
+		return 0;
+	}
+
+	for(i = 0; i < n1; i++){
+		if(s1[i] != s2[i]){
+			return 0;
+		}
+	}
+	return 1;
 }
 
 
@@ -497,98 +512,137 @@ struct DState {
 	int accepting;
 };
 
-struct DState DStates[128];
-int nDStates;
+struct dfa {
+	int nstates;
+	struct DState states[128];
+	int transitions[128][128];
+};
 
-int DTrans[32][128];
+struct dfa *dfaNew(){
+	int i, j;
+	struct dfa *dfa = calloc(1, sizeof(struct dfa));
 
-void makeDFA(struct ast_node *n){
-	int allMarked;
-	int i, j, k, l;
-
-	nDStates = 1;
-	DStates[0].marked = 0;
-	for(i = 0; i < n->nFirstPos; i++){
-		DStates[0].list[i] = n->firstPos[i];
-	}
-	DStates[0].accepting = 0;
-	DStates[0].nList = n->nFirstPos;
-
-	for(i = 0; i < 32; i++){
+	for(i = 0; i < 128; i++){
 		for(j = 0; j < 128; j++){
-			DTrans[i][j] = -1;
+			dfa->transitions[i][j] = -1;
 		}
 	}
+	return dfa;
+}
 
-	for(i = 0; i < nDStates; i++){
-		if(!DStates[i].marked){
-			DStates[i].marked = 1;
 
-			for(j = 0; j < DStates[i].nList; j++){
-				if(leafIndex[DStates[i].list[j]]->c == '#'){
-					DStates[i].accepting = 1;
-				}
+int dfaAddState(struct dfa *dfa, int *s, int n){
+	int stateIndex;
+	struct DState *state;
+	int i;
+
+	assert(dfa->nstates < 128);
+	assert(n < sizeof(dfa->states) / sizeof(dfa->states[0]));
+
+	stateIndex = dfa->nstates++;
+	state = &dfa->states[stateIndex];
+
+	state->marked = 0;
+	state->accepting = 0;
+	state->nList = n;
+	for(i = 0; i < n; i++){
+		state->list[i] = s[i];
+	}
+	return stateIndex;
+}
+
+int dfaMarkState(struct DState *state){
+	state->marked = 1;
+	return 0;
+}
+
+struct DState *dfaNextUnmarkedState(struct dfa *dfa){
+	int i;
+
+	for(i = 0; i < dfa->nstates; i++){
+		if(!dfa->states[i].marked){
+			return &dfa->states[i];
+		}
+	}
+	return NULL;
+}
+
+struct DState *dfaFindStateWithSet(struct dfa *dfa, int *s, int n){
+	int i, j;
+
+	for(i = 0; i < dfa->nstates; i++){
+		if(setIsEqual(dfa->states[i].list, dfa->states[i].nList, s, n)){
+			return &dfa->states[i];
+		}
+	}
+	return NULL;
+}
+
+int dfaAddTransition(struct dfa *dfa, struct DState *state, int symbol, struct DState *nextState){
+	// TODO: check this pointer math.. Seems to work
+	int stateIndex = state - dfa->states;
+	int nextStateIndex = nextState - dfa->states;
+	dfa->transitions[stateIndex][symbol] = nextStateIndex;
+	return 0;
+}
+
+struct dfa *makeDFA(struct ast_node *n){
+	int allMarked;
+	int i, j, k, l;
+	int symbol;
+
+	struct dfa *dfa = dfaNew();
+
+	struct DState *state;
+	dfaAddState(dfa, n->firstPos, n->nFirstPos);
+	while((state = dfaNextUnmarkedState(dfa)) != NULL){
+		dfaMarkState(state);
+
+		for(j = 0; j < state->nList; j++){
+			if(leafIndex[state->list[j]]->c == '#'){
+				state->accepting = 1;
 			}
+		}
 
+		for(symbol = 0; symbol < 128; symbol++){
 			int u[32];
 			int nu = 0;
 
-			for(j = 0; j < 128; j++){
-				nu = 0;
-				for(k = 0; k < DStates[i].nList; k++){
-					if(j == leafIndex[DStates[i].list[k]]->c){
-						setUnionInplace(u, 32, &nu, leafIndex[DStates[i].list[k]]->followPos, leafIndex[DStates[i].list[k]]->nFollowPos);
-					}
+			for(k = 0; k < state->nList; k++){
+				int leaf = state->list[k];
+				if(symbol == leafIndex[leaf]->c){
+					setUnionInplace(u, 32, &nu, leafIndex[leaf]->followPos, leafIndex[leaf]->nFollowPos);
 				}
-
-
-				if(nu > 0){
-					for(k = 0; k < nDStates; k++){
-						if(DStates[k].nList == nu){
-							for(l = 0; l < DStates[k].nList; l++){
-								if(DStates[k].list[l] != u[l]){
-									break;
-								}
-							}
-							if(l == DStates[k].nList){
-								break;
-							}
-						}
-					}
-					if(k != nDStates){
-						DTrans[i][j] = k;
-					} else {
-						for(k = 0; k < nu; k++){
-							DStates[nDStates].list[k] = u[k];
-						}
-						DStates[nDStates].marked = 0;
-						DStates[nDStates].nList = nu;
-						DStates[nDStates].accepting = 0;
-						DTrans[i][j] = nDStates;
-						nDStates += 1;
-					}
-				}
-
 			}
 
+			if(nu > 0){
+				struct DState *nextState = dfaFindStateWithSet(dfa, u, nu);
+
+				if(nextState){
+					dfaAddTransition(dfa, state, symbol, nextState);
+				} else {
+					int nextStateIndex = dfaAddState(dfa, u, nu);
+					dfaAddTransition(dfa, state, symbol, &dfa->states[nextStateIndex]);
+				}
+			}
 		}
 	}
-
+	return dfa;
 }
 
-void graphDFA(){
+void graphDFA(struct dfa *dfa){
 	int i, j;
 
 	printf("digraph G {\n");
 	printf("\trankdir = LR\n");
 
-	for(i = 0; i < nDStates; i++){
+	for(i = 0; i < dfa->nstates; i++){
 		printf("\tnode%d [label=\"[", i);
-		for(j = 0; j < DStates[i].nList; j++){
-			printf(" %d", DStates[i].list[j]);
+		for(j = 0; j < dfa->states[i].nList; j++){
+			printf(" %d", dfa->states[i].list[j]);
 		}
 		printf(" ]\"");
-		if(DStates[i].accepting){
+		if(dfa->states[i].accepting){
 			printf(", shape=doublecircle");
 		} else {
 			printf(", shape=circle");
@@ -596,10 +650,10 @@ void graphDFA(){
 		printf("]\n");
 	}
 
-	for(i = 0; i < nDStates; i++){
+	for(i = 0; i < dfa->nstates; i++){
 		for(j = 0; j < 128; j++){
-			if(DTrans[i][j] >= 0){
-				printf("\tnode%d -> node%d [label=\"%c\"]\n", i, DTrans[i][j], j);
+			if(dfa->transitions[i][j] >= 0){
+				printf("\tnode%d -> node%d [label=\"%c\"]\n", i, dfa->transitions[i][j], j);
 			}
 		}
 	}
@@ -609,6 +663,28 @@ void graphDFA(){
 
 }
 
+int match(struct dfa *dfa, char *s){
+	int i;
+	int state;
+
+	state = 0;
+	for(i = 0; s[i] != '\0'; i++){
+		state = dfa->transitions[state][s[i]];
+		if(state < 0){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+void test_match(struct dfa *dfa, char *s){
+	printf("trying to match: %s\n", s);
+	if(match(dfa, s)){
+		printf("MATCHED!\n");
+	} else {
+		printf("DID NOT MATCH!\n");
+	}
+}
 
 void test_regex1(){
 	struct ast_node *node;
@@ -622,8 +698,29 @@ void test_regex1(){
 
 	//printAST(node);
 
-	makeDFA(node);
-	graphDFA();
+	struct dfa *dfa = makeDFA(node);
+	//graphDFA();
+	test_match(dfa, "aaaaaabb");
+	test_match(dfa, "killfuck");
+}
+
+void test_regex2(){
+	struct ast_node *node;
+
+	strcpy(inputString, "(killfuck)*");
+	lookAheadIndex = 0;
+	nextToken();
+	node = orLevel();
+
+	//graphAST(node);
+
+	//printAST(node);
+
+	struct dfa *dfa = makeDFA(node);
+	//graphDFA();
+	//graphDFA();
+	test_match(dfa, "aaaaaabb");
+	test_match(dfa, "killfuck");
 }
 
 int main(int argc, char *argv[]){
