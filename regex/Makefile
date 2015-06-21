@@ -1,5 +1,5 @@
 regex: regex.c
-	gcc -o regex regex.c
+	gcc -g -o regex regex.c
 
 .PHONY: clean
 

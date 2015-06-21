@@ -9,6 +9,147 @@
 #include <assert.h>
 
 
+static int insertSorted(int *list, const int size, const int n, const int value){
+	int i;
+
+	for(i = n; i > 0; i--){
+		if(list[i-1] < value){
+			list[i] = value;
+			break;
+		} else {
+			list[i] = list[i-1];
+		}
+	}
+	if(i == 0){
+		list[i] = value;
+	}
+	return 0;
+}
+
+static int removeSorted(int *list, const int size, const int n, const int value){
+	int i;
+
+	for(i = 0; i < n; i++){
+		if(list[i] == value){
+			break;
+		}
+	}
+	for(; i < n-1; i++){
+		list[i] = list[i+1];
+	}
+	return 0;
+}
+
+
+
+struct set {
+	int *items;
+	int used;
+	int size;
+};
+
+
+struct set *newSet(void){
+	struct set *set;
+
+	set = calloc(1, sizeof(struct set));
+	assert(set != NULL);
+	set->used = 0;
+	set->size = 4;
+	set->items = calloc(set->size, sizeof(int));
+	assert(set->items != NULL);
+	return set;
+}
+
+struct set *newSetFromSet(struct set *s1){
+	struct set *set;
+
+	set = calloc(1, sizeof(struct set));
+	assert(set != NULL);
+	set->used = s1->used;
+	set->size = s1->size;
+	set->items = calloc(set->size, sizeof(int));
+	assert(set->items != NULL);
+	memcpy(set->items, s1->items, sizeof(int)*set->used);
+	return set;
+}
+
+
+void freeSet(struct set *set){
+	free(set->items);
+	set->items = 0;
+	free(set);
+}
+
+
+int setBoostSize(struct set *set){
+	int amount = 4;
+	set->items = realloc(set->items, set->size + amount * sizeof(int));
+	assert(set->items != NULL);
+	set->size += amount;
+	printf("bump!\n");
+	return 0;
+}
+
+
+int setInsert(struct set *set, int value){
+	int i;
+
+	for(i = 0; i < set->used && set->items[i] != value; i++);
+	if(i == set->used){
+		if(set->used + 1 <= set->size){
+			insertSorted(set->items, set->size, set->used, value);
+			set->used += 1;
+		} else {
+			setBoostSize(set);
+			insertSorted(set->items, set->size, set->used, value);
+			set->used += 1;
+		}
+	} else {
+
+	}
+	return 0;
+}
+
+int setRemove(struct set *set, int value){
+	int i;
+
+	for(i = 0; i < set->used && set->items[i] != value; i++);
+	if(i < set->used){
+		removeSorted(set->items, set->size, set->used, value);
+		set->used -= 1;
+	}
+	return 0;
+}
+
+int setAddSet(struct set *set, struct set *s1){
+	int i;
+
+	for(i = 0; i < s1->used; i++){
+		setInsert(set, s1->items[i]);
+	}
+	return 0;
+}
+
+struct set *newSetFromUnion(struct set *s1, struct set *s2){
+	struct set *set;
+
+	set = newSet();
+	assert(set != NULL);
+	setAddSet(set, s1);
+	setAddSet(set, s2);
+	return set;
+}
+
+struct set *newSetFromInteger(int value){
+	struct set *set;
+
+	set = newSet();
+	setInsert(set, value);
+	return set;
+}
+
+
 int setUnion(int *dst, const int size, int *n, const int *s1, const int n1, const int *s2, const int n2){
 	// Merge algorithm
 	int i, j;
@@ -118,28 +259,15 @@ struct ast_node {
 	char c;
 	int leafNumber;
 	int nullable;
-	int firstPos[32];
-	int nFirstPos;
-	int lastPos[32];
-	int nLastPos;
-	int followPos[32];
-	int nFollowPos;
+	struct set *firstpos;
+	struct set *lastpos;
+	struct set *followpos;
+	// int followPos[32];
+	// int nFollowPos;
 };
 
 struct ast_node *leafIndex[128];
 int leafCount = 1;
-
-void setFollowPos(int leafNumber, struct ast_node *firstNode){
-	int i, j, k;
-	struct ast_node *node;
-
-	i = j = 0;
-
-	node = leafIndex[leafNumber];
-	assert(leafNumber < leafCount);
-
-	setUnionInplace(node->followPos, 32, &node->nFollowPos, firstNode->firstPos, firstNode->nFirstPos);
-}
 
 
 struct ast_node *astOrNode(struct ast_node *child0, struct ast_node *child1){
@@ -155,16 +283,14 @@ struct ast_node *astOrNode(struct ast_node *child0, struct ast_node *child1){
 	n->nullable = child0->nullable || child1->nullable;
 
 	// firstpos
-	n->nFirstPos = 0;
-	setUnion(n->firstPos, 32, &n->nFirstPos,
-			child0->firstPos, child0->nFirstPos,
-			child1->firstPos, child1->nFirstPos);
+	n->firstpos = newSetFromUnion(child0->firstpos, child1->firstpos);
+	
 
 	// lastpos
-	n->nLastPos = 0;
-	setUnion(n->lastPos, 32, &n->nLastPos,
-			child0->lastPos, child0->nLastPos,
-			child1->lastPos, child1->nLastPos);
+	n->lastpos = newSetFromUnion(child0->lastpos, child1->lastpos);
+
+	// followpos
+	n->followpos = newSet();
 	return n;
 }
 
@@ -181,34 +307,30 @@ struct ast_node *astCatNode(struct ast_node *child0, struct ast_node *child1){
 	n->nullable = child0->nullable && child1->nullable;
 
 	// firstpos
-	n->nFirstPos = 0;
-	if(child0->nullable){
-		setUnion(n->firstPos, 32, &n->nFirstPos,
-				child0->firstPos, child0->nFirstPos,
-				child1->firstPos, child1->nFirstPos);
-	} else {
-		for(i = 0; i < child0->nFirstPos; i++){
-			n->firstPos[i] = child0->firstPos[i];
-		}
-		n->nFirstPos = child0->nFirstPos;
-	}
 
-	// lastpos
-	n->nLastPos = 0;
-	if(child1->nullable){
-		setUnion(n->lastPos, 32, &n->nLastPos,
-				child0->lastPos, child0->nLastPos,
-				child1->lastPos, child1->nLastPos);
+	if(child0->nullable){	
+		n->firstpos = newSetFromUnion(child0->firstpos, child1->firstpos);
 	} else {
-		for(i = 0; i < child1->nLastPos; i++){
-			n->lastPos[i] = child1->lastPos[i];
-		}
-		n->nLastPos = child1->nLastPos;
+		n->firstpos = newSetFromSet(child0->firstpos);
+	}
+	
+	// lastpos
+	if(child1->nullable){
+		n->lastpos = newSetFromUnion(child0->lastpos, child1->lastpos);
+	} else {
+		n->lastpos = newSetFromSet(child1->lastpos);
 	}
 
 	// followpos
-	for(i = 0; i < child0->nLastPos; i++){
-		setFollowPos(child0->lastPos[i], child1);
+	n->followpos = newSet();
+	for(i = 0; i < child0->lastpos->used; i++){
+		int leafNumber = child0->lastpos->items[i];
+		struct ast_node *node;
+
+		assert(leafNumber < leafCount);
+		node = leafIndex[leafNumber];
+
+		setAddSet(node->followpos, child1->firstpos);
 	}
 	return n;
 }
@@ -226,21 +348,21 @@ struct ast_node *astStarNode(struct ast_node *child){
 	n->nullable = 1;
 
 	// firstpos
-	for(i = 0; i < child->nFirstPos; i++){
-		n->firstPos[i] = child->firstPos[i];
-	}
-	n->nFirstPos = child->nFirstPos;
+	n->firstpos = newSetFromSet(child->firstpos);	
 
 	// lastpos
-	for(i = 0; i < child->nLastPos; i++){
-		n->lastPos[i] = child->lastPos[i];
-	}
-	n->nLastPos = child->nLastPos;
+	n->lastpos = newSetFromSet(child->lastpos);
 
 	// followpos
-	n->nFollowPos = 0;
-	for(i = 0; i < n->nLastPos; i++){
-		setFollowPos(n->lastPos[i], n);
+	n->followpos = newSet();
+	for(i = 0; i < n->lastpos->used; i++){
+		int leafNumber = n->lastpos->items[i];
+		struct ast_node *node;
+
+		assert(leafNumber < leafCount);
+		node = leafIndex[leafNumber];
+
+		setAddSet(node->followpos, n->firstpos);
 	}
 	return n;
 }
@@ -255,11 +377,9 @@ struct ast_node *astLiteralNode(char c){
 	n->c = c;
 	n->nullable = 0;
 	n->leafNumber = leafCount;
-	n->firstPos[0] = n->leafNumber;
-	n->nFirstPos = 1;
-	n->lastPos[0] = n->leafNumber;
-	n->nLastPos = 1;
-	n->nFollowPos = 0;
+	n->firstpos = newSetFromInteger(n->leafNumber);
+	n->lastpos = newSetFromInteger(n->leafNumber);
+	n->followpos = newSet();
 
 	leafIndex[leafCount++] = n;
 
@@ -274,9 +394,8 @@ struct ast_node *astEpsilonNode(){
 	n->op = OP_EPSILON;
 	n->nullable = 1;
 	n->leafNumber = leafCount;
-	n->nFirstPos = 0;
-	n->nLastPos = 0;
-	n->nFollowPos = 0;
+	n->firstpos = newSet();
+	n->followpos = newSet();
 
 	leafIndex[leafCount++] = n;
 
@@ -320,24 +439,24 @@ int graphEmitNode(struct ast_node *node){
 		printf("firstpos: ");
 		{
 			printf("[ ");
-			for(i = 0; i < node->nFirstPos; i++){
-				printf("%d ", node->firstPos[i]);
+			for(i = 0; i < node->firstpos->used; i++){
+				printf("%d ", node->firstpos->items[i]);
 			}
 			printf("]\\n");
 		}
 		printf("lastpos: ");
 		{
 			printf("[ ");
-			for(i = 0; i < node->nLastPos; i++){
-				printf("%d ", node->lastPos[i]);
+			for(i = 0; i < node->lastpos->used; i++){
+				printf("%d ", node->lastpos->items[i]);
 			}
 			printf("]\\n");
 		}
 		printf("followpos: ");
 		{
 			printf("[ ");
-			for(i = 0; i < node->nFollowPos; i++){
-				printf("%d ", node->followPos[i]);
+			for(i = 0; i < node->followpos->used; i++){
+				printf("%d ", node->followpos->items[i]);
 			}
 			printf("]\\n");
 		}
@@ -484,16 +603,16 @@ void printAST(struct ast_node *node){
 	if(node->leafNumber >= 0){
 		printf("%d: nullable:[%s] ", node->leafNumber, node->nullable ? "YES" : "NO");
 		printf("firstpos:[ ");
-		for(i = 0; i < node->nFirstPos; i++){
-			printf("%d ", node->firstPos[i]);
+		for(i = 0; i < node->firstpos->used; i++){
+			printf("%d ", node->firstpos->items[i]);
 		}
 		printf("] lastpos:[ ");
-		for(i = 0; i < node->nLastPos; i++){
-			printf("%d ", node->lastPos[i]);
+		for(i = 0; i < node->lastpos->used; i++){
+			printf("%d ", node->lastpos->items[i]);
 		}
 		printf("] followpos:[ ");
-		for(i = 0; i < node->nFollowPos; i++){
-			printf("%d ", node->followPos[i]);
+		for(i = 0; i < node->followpos->used; i++){
+			printf("%d ", node->followpos->items[i]);
 		}
 		printf("]\n");
 	}
@@ -594,7 +713,7 @@ struct dfa *makeDFA(struct ast_node *n){
 	struct dfa *dfa = dfaNew();
 
 	struct DState *state;
-	dfaAddState(dfa, n->firstPos, n->nFirstPos);
+	dfaAddState(dfa, n->firstpos->items, n->firstpos->used);
 	while((state = dfaNextUnmarkedState(dfa)) != NULL){
 		dfaMarkState(state);
 
@@ -611,7 +730,7 @@ struct dfa *makeDFA(struct ast_node *n){
 			for(k = 0; k < state->nList; k++){
 				int leaf = state->list[k];
 				if(symbol == leafIndex[leaf]->c){
-					setUnionInplace(u, 32, &nu, leafIndex[leaf]->followPos, leafIndex[leaf]->nFollowPos);
+					setUnionInplace(u, 32, &nu, leafIndex[leaf]->followpos->items, leafIndex[leaf]->followpos->used);
 				}
 			}
 
@@ -723,6 +842,51 @@ void test_regex2(){
 	test_match(dfa, "killfuck");
 }
 
+
+void print_set(struct set *set){
+	int i;
+
+	printf("{");
+	for(i = 0; i < set->used; i++){
+		printf(" %d", set->items[i]);
+	}
+	printf(" }\n");
+}
+
+void test_set1(){
+	struct set *set;
+	int i;
+
+	set = newSet(); print_set(set);
+
+	setInsert(set, 2); print_set(set);
+	setInsert(set, 4); print_set(set);
+	setInsert(set, 6); print_set(set);
+	setInsert(set, 8); print_set(set);
+	setInsert(set, 10); print_set(set);
+
+	setInsert(set, 9); print_set(set);
+	setInsert(set, 7); print_set(set);
+	setInsert(set, 5); print_set(set);
+	setInsert(set, 3); print_set(set);
+	setInsert(set, 1); print_set(set);
+
+	printf("\n");
+	
+	setRemove(set, 2); print_set(set);
+	setRemove(set, 4); print_set(set);
+	setRemove(set, 6); print_set(set);
+	setRemove(set, 8); print_set(set);
+	setRemove(set, 10); print_set(set);
+	setRemove(set, 9); print_set(set);
+	setRemove(set, 7); print_set(set);
+	setRemove(set, 5); print_set(set);
+	setRemove(set, 3); print_set(set);
+	setRemove(set, 1); print_set(set);
+}
+
+
 int main(int argc, char *argv[]){
 	test_regex1();
+	//test_set1();
 }
