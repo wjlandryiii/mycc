@@ -149,98 +149,22 @@ struct set *newSetFromInteger(int value){
 	return set;
 }
 
-
-int setUnion(int *dst, const int size, int *n, const int *s1, const int n1, const int *s2, const int n2){
-	// Merge algorithm
-	int i, j;
-	i = j = 0;
-	*n = 0;
-	while(i < n1 || j < n2){
-		if(*n >= size){
-			fprintf(stderr, "bump set size.\n");
-			exit(1);
-		}
-		if(i < n1 && j < n2){
-			if(s1[i] == s2[j]){
-				dst[*n] = s1[i];
-				*n += 1;
-				i += 1;
-				j += 1;
-			} else if(s1[i] < s2[j]){
-				dst[*n] = s1[i];
-				*n += 1;
-				i += 1;
-			} else if(s1[i] > s2[j]){
-				dst[*n] = s2[j];
-				*n += 1;
-				j += 1;
-			}
-		} else if(i < n1){
-			dst[*n] = s1[i];
-			*n += 1;
-			i += 1;
-		} else if(j < n2){
-			dst[*n] = s2[j];
-			*n += 1;
-			j += 1;
-		}
-	}
-	return 0;
-}
-
-int setUnionInplace(int *dst, const int size, int *n, const int *s1, const int n1){
-	int i, j, k;
-
-	i = j = 0;
-
-
-	while(i < *n || j < n1){
-		if(*n >= size){
-			fprintf(stderr, "bump set size\n");
-			exit(1);
-		}
-		if(i < *n && j < n1){
-			if(dst[i] == s1[j]){
-				i += 1;
-				j += 1;
-			} else if(dst[i] < s1[j]){
-				i += 1;
-			} else if(dst[i] > s1[j]){
-				for(k = *n; k > i; k--){
-					dst[k] = dst[k-1];
-				}
-				*n += 1;
-				dst[i] = s1[j];
-				i += 1;
-				j += 1;
-			}
-		} else if(i < *n){
-			break;
-		} else if(j < n1){
-			dst[i] = s1[j];
-			*n += 1;
-			i += 1;
-			j += 1;
-		}
-	}
-	return 0;
-}
-
-
-int setIsEqual(const int *s1, const int n1, const int *s2, const int n2){
+int areSetsEqual(struct set *s1, struct set *s2){
 	int i;
 
-	if(n1 != n2){
+	if(s1->used != s2->used){
 		return 0;
 	}
 
-	for(i = 0; i < n1; i++){
-		if(s1[i] != s2[i]){
+	for(i = 0; i< s1->used; i++){
+		if(s1->items[i] != s2->items[i]){
 			return 0;
 		}
 	}
 	return 1;
 }
+
+
 
 
 
@@ -262,8 +186,6 @@ struct ast_node {
 	struct set *firstpos;
 	struct set *lastpos;
 	struct set *followpos;
-	// int followPos[32];
-	// int nFollowPos;
 };
 
 struct ast_node *leafIndex[128];
@@ -307,7 +229,6 @@ struct ast_node *astCatNode(struct ast_node *child0, struct ast_node *child1){
 	n->nullable = child0->nullable && child1->nullable;
 
 	// firstpos
-
 	if(child0->nullable){	
 		n->firstpos = newSetFromUnion(child0->firstpos, child1->firstpos);
 	} else {
@@ -626,8 +547,9 @@ void printAST(struct ast_node *node){
 
 struct DState {
 	int marked;
-	int list[32];
-	int nList;
+	// int list[32];
+	// int nList;
+	struct set *list;
 	int accepting;
 };
 
@@ -650,23 +572,23 @@ struct dfa *dfaNew(){
 }
 
 
-int dfaAddState(struct dfa *dfa, int *s, int n){
+int dfaAddState(struct dfa *dfa, struct set *set){
 	int stateIndex;
 	struct DState *state;
 	int i;
 
 	assert(dfa->nstates < 128);
-	assert(n < sizeof(dfa->states) / sizeof(dfa->states[0]));
 
 	stateIndex = dfa->nstates++;
 	state = &dfa->states[stateIndex];
 
 	state->marked = 0;
 	state->accepting = 0;
-	state->nList = n;
-	for(i = 0; i < n; i++){
-		state->list[i] = s[i];
-	}
+	// state->nList = n;
+	// for(i = 0; i < n; i++){
+	// 	state->list[i] = s[i];
+	// }
+	state->list = newSetFromSet(set);
 	return stateIndex;
 }
 
@@ -686,11 +608,11 @@ struct DState *dfaNextUnmarkedState(struct dfa *dfa){
 	return NULL;
 }
 
-struct DState *dfaFindStateWithSet(struct dfa *dfa, int *s, int n){
+struct DState *dfaFindStateWithSet(struct dfa *dfa, struct set *set){
 	int i, j;
 
 	for(i = 0; i < dfa->nstates; i++){
-		if(setIsEqual(dfa->states[i].list, dfa->states[i].nList, s, n)){
+		if(areSetsEqual(dfa->states[i].list, set)){
 			return &dfa->states[i];
 		}
 	}
@@ -713,34 +635,33 @@ struct dfa *makeDFA(struct ast_node *n){
 	struct dfa *dfa = dfaNew();
 
 	struct DState *state;
-	dfaAddState(dfa, n->firstpos->items, n->firstpos->used);
+	dfaAddState(dfa, n->firstpos);
 	while((state = dfaNextUnmarkedState(dfa)) != NULL){
 		dfaMarkState(state);
 
-		for(j = 0; j < state->nList; j++){
-			if(leafIndex[state->list[j]]->c == '#'){
+		for(j = 0; j < state->list->used; j++){
+			if(leafIndex[state->list->items[j]]->c == '#'){
 				state->accepting = 1;
 			}
 		}
 
 		for(symbol = 0; symbol < 128; symbol++){
-			int u[32];
-			int nu = 0;
+			struct set *u = newSet();
 
-			for(k = 0; k < state->nList; k++){
-				int leaf = state->list[k];
+			for(k = 0; k < state->list->used; k++){
+				int leaf = state->list->items[k];
 				if(symbol == leafIndex[leaf]->c){
-					setUnionInplace(u, 32, &nu, leafIndex[leaf]->followpos->items, leafIndex[leaf]->followpos->used);
+					setAddSet(u, leafIndex[leaf]->followpos);
 				}
 			}
 
-			if(nu > 0){
-				struct DState *nextState = dfaFindStateWithSet(dfa, u, nu);
+			if(u->used > 0){
+				struct DState *nextState = dfaFindStateWithSet(dfa, u);
 
 				if(nextState){
 					dfaAddTransition(dfa, state, symbol, nextState);
 				} else {
-					int nextStateIndex = dfaAddState(dfa, u, nu);
+					int nextStateIndex = dfaAddState(dfa, u);
 					dfaAddTransition(dfa, state, symbol, &dfa->states[nextStateIndex]);
 				}
 			}
@@ -757,8 +678,8 @@ void graphDFA(struct dfa *dfa){
 
 	for(i = 0; i < dfa->nstates; i++){
 		printf("\tnode%d [label=\"[", i);
-		for(j = 0; j < dfa->states[i].nList; j++){
-			printf(" %d", dfa->states[i].list[j]);
+		for(j = 0; j < dfa->states[i].list->used; j++){
+			printf(" %d", dfa->states[i].list->items[j]);
 		}
 		printf(" ]\"");
 		if(dfa->states[i].accepting){
