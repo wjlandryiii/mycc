@@ -85,7 +85,7 @@ void freeSet(struct set *set){
 
 static int setBoostSize(struct set *set){
 	int amount = 4;
-	set->items = realloc(set->items, set->size + amount * sizeof(int));
+	set->items = realloc(set->items, (set->size + amount) * sizeof(int));
 	assert(set->items != NULL);
 	set->size += amount;
 	printf("bump!\n");

@@ -8,94 +8,105 @@
 #include <assert.h>
 
 #include "set.h"
+#include "list.h"
 #include "dfa.h"
 
 
 struct dfa *dfaNew(){
-	int i, j;
 	struct dfa *dfa = calloc(1, sizeof(struct dfa));
-
-	for(i = 0; i < 128; i++){
-		for(j = 0; j < 128; j++){
-			dfa->transitions[i][j] = -1;
-		}
-	}
+	assert(dfa != NULL);
+	dfa->states = newPointerList();
+	assert(dfa->states != NULL);
 	return dfa;
 }
 
 
-int dfaAddState(struct dfa *dfa, struct set *set){
+struct dfa_state *dfaAddState(struct dfa *dfa, struct set *set, int accepting){
 	int stateIndex;
-	struct DState *state;
+	struct dfa_state *state;
 	int i;
 
-	assert(dfa->nstates < 128);
-
-	stateIndex = dfa->nstates++;
-	state = &dfa->states[stateIndex];
+	state = calloc(1, sizeof(struct dfa_state));
+	assert(state != NULL);
 
 	state->marked = 0;
-	state->accepting = 0;
-	// state->nList = n;
-	// for(i = 0; i < n; i++){
-	// 	state->list[i] = s[i];
-	// }
+	state->accepting = accepting;
 	state->list = newSetFromSet(set);
-	return stateIndex;
+	for(i = 0; i < 128; i++){
+		state->transition[i] = -1;
+	}
+
+	state->index =  pointerListAppend(dfa->states, state);
+	return state;
 }
 
-int dfaMarkState(struct DState *state){
+int dfaMarkState(struct dfa_state *state){
 	state->marked = 1;
 	return 0;
 }
 
-struct DState *dfaNextUnmarkedState(struct dfa *dfa){
-	int i;
+struct dfa_state *dfaNextUnmarkedState(struct dfa *dfa){
+	struct pointer_list_iterator pli;
+	struct dfa_state *state;
 
-	for(i = 0; i < dfa->nstates; i++){
-		if(!dfa->states[i].marked){
-			return &dfa->states[i];
+	pli = pointerListIterator(dfa->states);
+	while(pointerListIteratorNextItem(&pli, (void**)&state)){
+		if(state->marked == 0){
+			return state;
 		}
 	}
 	return NULL;
 }
 
-struct DState *dfaFindStateWithSet(struct dfa *dfa, struct set *set){
+struct dfa_state *dfaFindStateWithSet(struct dfa *dfa, struct set *set){
 	int i, j;
 
-	for(i = 0; i < dfa->nstates; i++){
-		if(areSetsEqual(dfa->states[i].list, set)){
-			return &dfa->states[i];
+	struct pointer_list_iterator pli;
+	struct dfa_state *state;
+	pli = pointerListIterator(dfa->states);
+	while(pointerListIteratorNextItem(&pli, (void**)&state)){
+		if(areSetsEqual(state->list, set)){
+			return state;
 		}
 	}
 	return NULL;
 }
 
-int dfaAddTransition(struct dfa *dfa, struct DState *state, int symbol, struct DState *nextState){
-	// TODO: check this pointer math.. Seems to work
-	int stateIndex = state - dfa->states;
-	int nextStateIndex = nextState - dfa->states;
-	dfa->transitions[stateIndex][symbol] = nextStateIndex;
+int dfaAddTransition(struct dfa *dfa, struct dfa_state *s, int symbol, struct dfa_state *toState){
+	s->transition[symbol] = toState->index;
 	return 0;
+}
+
+int dfaQueryTransition(struct dfa *dfa, int stateIndex, int symbol){
+	struct dfa_state *state;
+
+	state = pointerAtIndex(dfa->states, stateIndex);
+	assert(state != NULL);
+	assert(0 <= symbol && symbol < 128);
+	return state->transition[symbol];
 }
 
 
 void graphDFA(struct dfa *dfa){
-	int i, j;
+	struct pointer_list_iterator pli;
+	struct dfa_state *state;
+	struct set_iterator si;
+	int value;
+	int j;
 
 	printf("digraph G {\n");
 	printf("\trankdir = LR\n");
 
-	for(i = 0; i < dfa->nstates; i++){
-		printf("\tnode%d [label=\"[", i);
-		struct set_iterator si;
-		int value;
-		si = setIterator(dfa->states[i].list);
+	pli = pointerListIterator(dfa->states);
+	while(pointerListIteratorNextItem(&pli, (void**)&state)){
+		printf("\tnode%d [label=\"[", pli.index);
+
+		si = setIterator(state->list);
 		while(nextSetItem(&si, &value)){
 			printf(" %d", value);
 		}
 		printf(" ]\"");
-		if(dfa->states[i].accepting){
+		if(state->accepting){
 			printf(", shape=doublecircle");
 		} else {
 			printf(", shape=circle");
@@ -103,15 +114,17 @@ void graphDFA(struct dfa *dfa){
 		printf("]\n");
 	}
 
-	for(i = 0; i < dfa->nstates; i++){
+	pli = pointerListIterator(dfa->states);
+	while(pointerListIteratorNextItem(&pli, (void**)&state)){
 		for(j = 0; j < 128; j++){
-			if(dfa->transitions[i][j] >= 0){
-				printf("\tnode%d -> node%d [label=\"%c\"]\n", i, dfa->transitions[i][j], j);
+			if(state->transition[j] >= 0){
+				printf("\tnode%d -> node%d [label=\"%c\"]\n",
+						state->index,
+						state->transition[j],
+						j);
 			}
 		}
 	}
 
 	printf("}\n");
-
-
 }

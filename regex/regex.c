@@ -10,25 +10,8 @@
 
 
 #include "set.h"
+#include "list.h"
 #include "dfa.h"
-
-
-struct pointer_list {
-	void **items;
-	int used;
-	int size;
-};
-
-struct pointer_list *newPointerList(void){
-	struct pointer_list *list = calloc(1, sizeof(struct pointer_list));
-
-	list->used = 0;
-	list->size = 8;
-	list->items = calloc(list->size, sizeof(void *));
-	return list;
-}
-
-
 
 
 enum OPERATIONS {
@@ -269,7 +252,6 @@ int graphEmitNode(struct ast_node *node){
 	}
 	printf("]\n");
 
-	//printf("\tnode%d [label = \"%s\", shape = rectangle, style = filled, fillcolor = %s]\n", graphNodeNumber, label, nullable ? "gray" : "white");
 	return graphNodeNumber++;
 }
 
@@ -279,15 +261,21 @@ void graphEmitEdge(int from, int to){
 
 int graphEmitLeaf(char c, int nullable){
 	if(isalnum(c)){
-		printf("\tnode%d [label = \"%c\", shape = rectangle, style = filled, fillcolor = green]\n", graphNodeNumber, c);
+		printf("\tnode%d [label = \"%c\", "
+				"shape = rectangle, style = filled, fillcolor = green]\n",
+				graphNodeNumber, c);
 	} else {
-		printf("\tnode%d [label = \"0x%02x\", shape = rectangle, style = filled, fillcolor = green]\n", graphNodeNumber, c);
+		printf("\tnode%d [label = \"0x%02x\", "
+				"shape = rectangle, style = filled, fillcolor = green]\n",
+			       	graphNodeNumber, c);
 	}
 	return graphNodeNumber++;
 }
 
 int graphEmitEpsilonLeaf(int nullable){
-	printf("\tnode%d [label = \"\\{\\}\", shape = rectangle, style = filled, fillcolor = darkgreen]\n", graphNodeNumber);
+	printf("\tnode%d [label = \"\\{\\}\", "
+			"shape = rectangle, style = filled, fillcolor = darkgreen]\n",
+			graphNodeNumber);
 	return graphNodeNumber++;
 }
 
@@ -433,24 +421,21 @@ struct dfa *makeDFA(struct ast_node *n){
 	int i, j, k, l;
 	int symbol;
 
-	struct dfa *dfa = dfaNew();
-	struct set *u = newSet();
+	struct dfa *dfa;
+	struct set *u;
 
-	struct DState *state;
-	dfaAddState(dfa, n->firstpos);
+	struct dfa_state *state;
+	struct set_iterator si;
+	int leafNumber;
+
+	dfa = dfaNew();
+	assert(dfa != NULL);
+	u = newSet();
+	assert(u != NULL);
+
+	dfaAddState(dfa, n->firstpos, 0);
 	while((state = dfaNextUnmarkedState(dfa)) != NULL){
 		dfaMarkState(state);
-
-		struct set_iterator si;
-		int leafNumber;
-		si = setIterator(state->list);
-		while(nextSetItem(&si, &leafNumber)){
-			if(leafIndex[leafNumber]->c == '#'){
-				state->accepting = 1;
-			}
-		}
-
-		assert(u != NULL);
 
 		for(symbol = 0; symbol < 128; symbol++){
 			clearSet(u);
@@ -463,13 +448,21 @@ struct dfa *makeDFA(struct ast_node *n){
 			}
 
 			if(!isSetEmtpy(u)){
-				struct DState *nextState = dfaFindStateWithSet(dfa, u);
+				struct dfa_state *nextState = dfaFindStateWithSet(dfa, u);
+				struct set_iterator si;
 
 				if(nextState){
 					dfaAddTransition(dfa, state, symbol, nextState);
 				} else {
-					int nextStateIndex = dfaAddState(dfa, u);
-					dfaAddTransition(dfa, state, symbol, &dfa->states[nextStateIndex]);
+					int accepting = 0;
+					si = setIterator(u);
+					while(nextSetItem(&si, &leafNumber)){
+						if(leafIndex[leafNumber]->c == '#'){
+							accepting = 1;
+						}
+					}
+					struct dfa_state *nextState = dfaAddState(dfa, u, accepting);
+					dfaAddTransition(dfa, state, symbol, nextState);
 				}
 			}
 		}
@@ -485,7 +478,8 @@ int match(struct dfa *dfa, char *s){
 
 	state = 0;
 	for(i = 0; s[i] != '\0'; i++){
-		state = dfa->transitions[state][s[i]];
+
+		state = dfaQueryTransition(dfa, state, s[i]);
 		if(state < 0){
 			return 0;
 		}
@@ -584,8 +578,30 @@ void test_set1(){
 	setRemove(set, 1); print_set(set);
 }
 
+void test_list1(){
+	struct pointer_list_iterator pli;
+	struct pointer_list *list = newPointerList();
+	void *data;
+	struct set *set;
+
+	pointerListAppend(list, newSetFromInteger(4));
+	pointerListAppend(list, newSetFromInteger(3));
+	pointerListAppend(list, newSetFromInteger(2));
+	pointerListAppend(list, newSetFromInteger(1));
+	pointerListAppend(list, newSetFromInteger(0));
+
+	pli = pointerListIterator(list);
+	while(pointerListIteratorNextItem(&pli, &data)){
+		set = data;
+		print_set(set);
+	}
+
+	freePointerList(list);
+}
+
 
 int main(int argc, char *argv[]){
 	test_regex1();
 	//test_set1();
+	//test_list1();
 }
