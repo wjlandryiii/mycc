@@ -1,5 +1,13 @@
-regex: regex.c
-	gcc -g -o regex regex.c
+all: regex
+
+set.o: set.c set.h
+	gcc -g -c -o $@ $<
+
+regex.o: regex.c set.h
+	gcc -g -c -o $@ $<
+
+regex: regex.o set.o
+	gcc -g -o $@ $^
 
 .PHONY: clean
 
