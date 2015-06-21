@@ -6,13 +6,16 @@ list.o: list.c list.h
 set.o: set.c set.h
 	gcc -g -c -o $@ $<
 
+ast.o: ast.c ast.h list.h set.h
+	gcc -g -c -o $@ $<
+
 dfa.o: dfa.c dfa.h set.h list.h
 	gcc -g -c -o $@ $<
 
-regex.o: regex.c set.h dfa.h list.h
+regex.o: regex.c set.h dfa.h list.h ast.h
 	gcc -g -c -o $@ $<
 
-regex: regex.o set.o dfa.o list.o
+regex: regex.o ast.o dfa.o set.o list.o
 	gcc -g -o $@ $^
 
 .PHONY: clean
