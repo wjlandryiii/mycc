@@ -88,8 +88,13 @@ struct ast_node *astCatNode(struct ast_node *child0, struct ast_node *child1){
 
 	// followpos
 	n->followpos = newSet();
-	for(i = 0; i < child0->lastpos->used; i++){
-		int leafNumber = child0->lastpos->items[i];
+
+	struct set_iterator si;
+	int leafNumber;
+	// YOU LEFT OFF HERE!
+	si = setIterator(child0->lastpos);
+
+	while(nextSetItem(&si, &leafNumber)){
 		struct ast_node *node;
 
 		assert(leafNumber < leafCount);
@@ -120,8 +125,12 @@ struct ast_node *astStarNode(struct ast_node *child){
 
 	// followpos
 	n->followpos = newSet();
-	for(i = 0; i < n->lastpos->used; i++){
-		int leafNumber = n->lastpos->items[i];
+
+	struct set_iterator si;
+	int leafNumber;
+
+	si = setIterator(n->lastpos);
+	while(nextSetItem(&si, &leafNumber)){
 		struct ast_node *node;
 
 		assert(leafNumber < leafCount);
@@ -200,28 +209,33 @@ int graphEmitNode(struct ast_node *node){
 			exit(1);
 		}
 
+		struct set_iterator si;
+		int value;
 		printf("nullable: %s\\n", node->nullable ? "YES" : "NO");
 		printf("firstpos: ");
 		{
 			printf("[ ");
-			for(i = 0; i < node->firstpos->used; i++){
-				printf("%d ", node->firstpos->items[i]);
-			}
+			si = setIterator(node->firstpos);
+			while(nextSetItem(&si, &value)){
+				printf("%d ", value);
+			}	
 			printf("]\\n");
 		}
 		printf("lastpos: ");
 		{
 			printf("[ ");
-			for(i = 0; i < node->lastpos->used; i++){
-				printf("%d ", node->lastpos->items[i]);
+			si = setIterator(node->lastpos);
+			while(nextSetItem(&si, &value)){
+				printf("%d ", value);
 			}
 			printf("]\\n");
 		}
 		printf("followpos: ");
 		{
 			printf("[ ");
-			for(i = 0; i < node->followpos->used; i++){
-				printf("%d ", node->followpos->items[i]);
+			si = setIterator(node->followpos);
+			while(nextSetItem(&si, &value)){
+				printf("%d ", value);
 			}
 			printf("]\\n");
 		}
@@ -364,20 +378,25 @@ struct ast_node *atomLevel(){
 
 void printAST(struct ast_node *node){
 	int i;
+	struct set_iterator si;
+	int value;
 
 	if(node->leafNumber >= 0){
 		printf("%d: nullable:[%s] ", node->leafNumber, node->nullable ? "YES" : "NO");
 		printf("firstpos:[ ");
-		for(i = 0; i < node->firstpos->used; i++){
-			printf("%d ", node->firstpos->items[i]);
+		si = setIterator(node->firstpos);
+		while(nextSetItem(&si, &value)){
+			printf("%d ", value);
 		}
 		printf("] lastpos:[ ");
-		for(i = 0; i < node->lastpos->used; i++){
-			printf("%d ", node->lastpos->items[i]);
+		si = setIterator(node->lastpos);
+		while(nextSetItem(&si, &value)){
+			printf("%d ", value);
 		}
 		printf("] followpos:[ ");
-		for(i = 0; i < node->followpos->used; i++){
-			printf("%d ", node->followpos->items[i]);
+		si = setIterator(node->followpos);
+		while(nextSetItem(&si, &value)){
+			printf("%d ", value);
 		}
 		printf("]\n");
 	}
@@ -391,8 +410,6 @@ void printAST(struct ast_node *node){
 
 struct DState {
 	int marked;
-	// int list[32];
-	// int nList;
 	struct set *list;
 	int accepting;
 };
@@ -483,23 +500,29 @@ struct dfa *makeDFA(struct ast_node *n){
 	while((state = dfaNextUnmarkedState(dfa)) != NULL){
 		dfaMarkState(state);
 
-		for(j = 0; j < state->list->used; j++){
-			if(leafIndex[state->list->items[j]]->c == '#'){
+		struct set_iterator si;
+		int leafNumber;
+		si = setIterator(state->list);
+		while(nextSetItem(&si, &leafNumber)){
+			if(leafIndex[leafNumber]->c == '#'){
 				state->accepting = 1;
 			}
 		}
 
-		for(symbol = 0; symbol < 128; symbol++){
-			struct set *u = newSet();
+		struct set *u = newSet();
+		assert(u != NULL);
 
-			for(k = 0; k < state->list->used; k++){
-				int leaf = state->list->items[k];
-				if(symbol == leafIndex[leaf]->c){
-					setAddSet(u, leafIndex[leaf]->followpos);
+		for(symbol = 0; symbol < 128; symbol++){
+			clearSet(u);
+
+			si = setIterator(state->list);
+			while(nextSetItem(&si, &leafNumber)){
+				if(symbol == leafIndex[leafNumber]->c){
+					setAddSet(u, leafIndex[leafNumber]->followpos);
 				}
 			}
 
-			if(u->used > 0){
+			if(!isSetEmtpy(u)){
 				struct DState *nextState = dfaFindStateWithSet(dfa, u);
 
 				if(nextState){
@@ -522,8 +545,11 @@ void graphDFA(struct dfa *dfa){
 
 	for(i = 0; i < dfa->nstates; i++){
 		printf("\tnode%d [label=\"[", i);
-		for(j = 0; j < dfa->states[i].list->used; j++){
-			printf(" %d", dfa->states[i].list->items[j]);
+		struct set_iterator si;
+		int value;
+		si = setIterator(dfa->states[i].list);
+		while(nextSetItem(&si, &value)){
+			printf(" %d", value);
 		}
 		printf(" ]\"");
 		if(dfa->states[i].accepting){
@@ -609,11 +635,13 @@ void test_regex2(){
 
 
 void print_set(struct set *set){
-	int i;
+	struct set_iterator si;
+	int value;
 
 	printf("{");
-	for(i = 0; i < set->used; i++){
-		printf(" %d", set->items[i]);
+	si = setIterator(set);
+	while(nextSetItem(&si, &value)){
+		printf(" %d", value);
 	}
 	printf(" }\n");
 }

@@ -9,6 +9,13 @@
 
 #include "set.h"
 
+struct set {
+	int *items;
+	int used;
+	int size;
+};
+
+
 static int insertSorted(int *list, const int size, const int n, const int value){
 	int i;
 
@@ -157,3 +164,35 @@ int areSetsEqual(struct set *s1, struct set *s2){
 	}
 	return 1;
 }
+
+int isSetEmtpy(struct set *set){
+	if(set->used == 0){
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+int clearSet(struct set *set){
+	set->used = 0;
+	return 0;
+}
+
+struct set_iterator setIterator(struct set *set){
+	struct set_iterator si;
+
+	si.set = set;
+	si.index = 0;
+	return si;
+}
+
+int nextSetItem(struct set_iterator *si, int *value){
+	if(si->index < si->set->used){
+		*value = si->set->items[si->index];
+		si->index += 1;
+		return 1;
+	} else {
+		return 0;
+	}
+}
+

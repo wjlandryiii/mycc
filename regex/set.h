@@ -5,11 +5,7 @@
 #ifndef SET_H
 #define SET_H
 
-struct set {
-	int *items;
-	int used;
-	int size;
-};
+struct set;
 
 struct set *newSet(void);
 struct set *newSetFromSet(struct set *s1);
@@ -20,5 +16,16 @@ int setAddSet(struct set *set, struct set *s1);
 struct set *newSetFromUnion(struct set *s1, struct set *s2);
 struct set *newSetFromInteger(int value);
 int areSetsEqual(struct set *s1, struct set *s2);
+int isSetEmtpy(struct set *set);
+int clearSet(struct set *set);
+
+struct set_iterator {
+	struct set *set;
+	int index;
+};
+
+struct set_iterator setIterator(struct set *set);
+int nextSetItem(struct set_iterator *si, int *value);
+
 
 #endif
