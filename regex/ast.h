@@ -5,6 +5,8 @@
 #ifndef AST_H
 #define AST_H
 
+struct set;
+struct pointer_list;
 
 extern struct ast_node *leafIndex[128];
 extern int leafCount;
@@ -32,7 +34,7 @@ struct ast_node {
 
 struct ast {
 	struct ast_node *root;
-	struct pointer_list *leafList;
+	struct pointer_list *leafNodeList;
 };
 
 struct ast *newAST(void);
@@ -42,4 +44,5 @@ struct ast_node *astStarNode(struct ast_node *child);
 struct ast_node *astLiteralNode(char c);
 struct ast_node *astEpsilonNode();
 
+int annotateAST(struct ast *ast);
 #endif

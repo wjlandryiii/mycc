@@ -14,7 +14,6 @@
 #include "ast.h"
 
 
-
 char inputString[1024];
 int lookAheadIndex;
 char lookAhead;
@@ -79,42 +78,9 @@ struct ast_node *atomLevel(){
 	return n;
 }
 
-void printAST(struct ast_node *node){
-	int i;
-	struct set_iterator si;
-	int value;
 
-	if(node->leafNumber >= 0){
-		printf("%d: nullable:[%s] ", node->leafNumber, node->nullable ? "YES" : "NO");
-		printf("firstpos:[ ");
-		si = setIterator(node->firstpos);
-		while(nextSetItem(&si, &value)){
-			printf("%d ", value);
-		}
-		printf("] lastpos:[ ");
-		si = setIterator(node->lastpos);
-		while(nextSetItem(&si, &value)){
-			printf("%d ", value);
-		}
-		printf("] followpos:[ ");
-		si = setIterator(node->followpos);
-		while(nextSetItem(&si, &value)){
-			printf("%d ", value);
-		}
-		printf("]\n");
-	}
-	if(node->child0){
-		printAST(node->child0);
-	}
-	if(node->child1){
-		printAST(node->child1);
-	}
-}
-
-
-struct dfa *makeDFA(struct ast_node *n){
+struct dfa *makeDFA(struct ast *ast){
 	int allMarked;
-	int i, j, k, l;
 	int symbol;
 
 	struct dfa *dfa;
@@ -129,7 +95,7 @@ struct dfa *makeDFA(struct ast_node *n){
 	u = newSet();
 	assert(u != NULL);
 
-	dfaAddState(dfa, n->firstpos, 0);
+	dfaAddState(dfa, ast->root->firstpos, 0);
 	while((state = dfaNextUnmarkedState(dfa)) != NULL){
 		dfaMarkState(state);
 
@@ -157,7 +123,8 @@ struct dfa *makeDFA(struct ast_node *n){
 							accepting = 1;
 						}
 					}
-					struct dfa_state *nextState = dfaAddState(dfa, u, accepting);
+					struct dfa_state *nextState;
+					nextState = dfaAddState(dfa, u, accepting);
 					dfaAddTransition(dfa, state, symbol, nextState);
 				}
 			}
@@ -193,111 +160,30 @@ void test_match(struct dfa *dfa, char *s){
 }
 
 void test_regex1(){
-	struct ast_node *node;
+	struct ast *ast;
 
 	strcpy(inputString, "(a|b)*abb#");
 	lookAheadIndex = 0;
 	nextToken();
-	node = orLevel();
+	ast = newAST();
+	ast->root = orLevel();
 
+	//astLabelLeafs(ast, ast->root);
+	annotateAST(ast);
 	//graphAST(node);
 
 	//printAST(node);
 
-	struct dfa *dfa = makeDFA(node);
-	//graphDFA();
-	test_match(dfa, "aaaaaabb");
-	test_match(dfa, "killfuck");
-}
-
-void test_regex2(){
-	struct ast_node *node;
-
-	strcpy(inputString, "(killfuck)*");
-	lookAheadIndex = 0;
-	nextToken();
-	node = orLevel();
-
-	//graphAST(node);
-
-	//printAST(node);
-
-	struct dfa *dfa = makeDFA(node);
-	//graphDFA();
+	struct dfa *dfa = makeDFA(ast);
 	//graphDFA();
 	test_match(dfa, "aaaaaabb");
 	test_match(dfa, "killfuck");
 }
 
 
-void print_set(struct set *set){
-	struct set_iterator si;
-	int value;
-
-	printf("{");
-	si = setIterator(set);
-	while(nextSetItem(&si, &value)){
-		printf(" %d", value);
-	}
-	printf(" }\n");
-}
-
-void test_set1(){
-	struct set *set;
-	int i;
-
-	set = newSet(); print_set(set);
-
-	setInsert(set, 2); print_set(set);
-	setInsert(set, 4); print_set(set);
-	setInsert(set, 6); print_set(set);
-	setInsert(set, 8); print_set(set);
-	setInsert(set, 10); print_set(set);
-
-	setInsert(set, 9); print_set(set);
-	setInsert(set, 7); print_set(set);
-	setInsert(set, 5); print_set(set);
-	setInsert(set, 3); print_set(set);
-	setInsert(set, 1); print_set(set);
-
-	printf("\n");
-	
-	setRemove(set, 2); print_set(set);
-	setRemove(set, 4); print_set(set);
-	setRemove(set, 6); print_set(set);
-	setRemove(set, 8); print_set(set);
-	setRemove(set, 10); print_set(set);
-	setRemove(set, 9); print_set(set);
-	setRemove(set, 7); print_set(set);
-	setRemove(set, 5); print_set(set);
-	setRemove(set, 3); print_set(set);
-	setRemove(set, 1); print_set(set);
-}
-
-void test_list1(){
-	struct pointer_list_iterator pli;
-	struct pointer_list *list = newPointerList();
-	void *data;
-	struct set *set;
-
-	pointerListAppend(list, newSetFromInteger(4));
-	pointerListAppend(list, newSetFromInteger(3));
-	pointerListAppend(list, newSetFromInteger(2));
-	pointerListAppend(list, newSetFromInteger(1));
-	pointerListAppend(list, newSetFromInteger(0));
-
-	pli = pointerListIterator(list);
-	while(pointerListIteratorNextItem(&pli, &data)){
-		set = data;
-		print_set(set);
-	}
-
-	freePointerList(list);
-}
 
 
 int main(int argc, char *argv[]){
 	test_regex1();
-	//test_set1();
-	//test_list1();
+	return 0;
 }

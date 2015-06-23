@@ -14,7 +14,7 @@
 
 
 struct ast_node *leafIndex[128];
-int leafCount = 1;
+int leafCount = 0;
 
 
 struct ast *newAST(void){
@@ -22,8 +22,9 @@ struct ast *newAST(void){
 
 	ast = calloc(1, sizeof(struct ast));
 	assert(ast != NULL);
-	ast->leafList = newPointerList();
-	assert(ast->leafList != NULL);
+	ast->root = NULL;
+	ast->leafNodeList = newPointerList();
+	assert(ast->leafNodeList != NULL);
 	return ast;
 }
 
@@ -37,19 +38,6 @@ struct ast_node *astOrNode(struct ast_node *child0, struct ast_node *child1){
 	n->child0 = child0;
 	n->child1 = child1;
 	n->leafNumber = -1;
-
-	// nullable
-	n->nullable = child0->nullable || child1->nullable;
-
-	// firstpos
-	n->firstpos = newSetFromUnion(child0->firstpos, child1->firstpos);
-	
-
-	// lastpos
-	n->lastpos = newSetFromUnion(child0->lastpos, child1->lastpos);
-
-	// followpos
-	n->followpos = newSet();
 	return n;
 }
 
@@ -61,40 +49,6 @@ struct ast_node *astCatNode(struct ast_node *child0, struct ast_node *child1){
 	n->child0 = child0;
 	n->child1 = child1;
 	n->leafNumber = -1;
-
-	// nullable
-	n->nullable = child0->nullable && child1->nullable;
-
-	// firstpos
-	if(child0->nullable){	
-		n->firstpos = newSetFromUnion(child0->firstpos, child1->firstpos);
-	} else {
-		n->firstpos = newSetFromSet(child0->firstpos);
-	}
-	
-	// lastpos
-	if(child1->nullable){
-		n->lastpos = newSetFromUnion(child0->lastpos, child1->lastpos);
-	} else {
-		n->lastpos = newSetFromSet(child1->lastpos);
-	}
-
-	// followpos
-	n->followpos = newSet();
-
-	struct set_iterator si;
-	int leafNumber;
-	// YOU LEFT OFF HERE!
-	si = setIterator(child0->lastpos);
-
-	while(nextSetItem(&si, &leafNumber)){
-		struct ast_node *node;
-
-		assert(leafNumber < leafCount);
-		node = leafIndex[leafNumber];
-
-		setAddSet(node->followpos, child1->firstpos);
-	}
 	return n;
 }
 
@@ -106,31 +60,6 @@ struct ast_node *astStarNode(struct ast_node *child){
 	n->leafNumber = -1;
 	n->child0 = child;
 	n->child1 = 0;
-
-	// nullable
-	n->nullable = 1;
-
-	// firstpos
-	n->firstpos = newSetFromSet(child->firstpos);	
-
-	// lastpos
-	n->lastpos = newSetFromSet(child->lastpos);
-
-	// followpos
-	n->followpos = newSet();
-
-	struct set_iterator si;
-	int leafNumber;
-
-	si = setIterator(n->lastpos);
-	while(nextSetItem(&si, &leafNumber)){
-		struct ast_node *node;
-
-		assert(leafNumber < leafCount);
-		node = leafIndex[leafNumber];
-
-		setAddSet(node->followpos, n->firstpos);
-	}
 	return n;
 }
 
@@ -144,9 +73,6 @@ struct ast_node *astLiteralNode(char c){
 	n->c = c;
 	n->nullable = 0;
 	n->leafNumber = leafCount;
-	n->firstpos = newSetFromInteger(n->leafNumber);
-	n->lastpos = newSetFromInteger(n->leafNumber);
-	n->followpos = newSet();
 
 	leafIndex[leafCount++] = n;
 
@@ -161,12 +87,180 @@ struct ast_node *astEpsilonNode(){
 	n->op = OP_EPSILON;
 	n->nullable = 1;
 	n->leafNumber = leafCount;
-	n->firstpos = newSet();
-	n->followpos = newSet();
 
 	leafIndex[leafCount++] = n;
 
 	return n;
+}
+
+int astLabelLeafNodes(struct ast *ast, struct ast_node *node){
+	if(node->op == OP_OR){
+		astLabelLeafNodes(ast, node->child0);
+		astLabelLeafNodes(ast, node->child1);
+		return 0;
+	} else if(node->op == OP_CAT){
+		astLabelLeafNodes(ast, node->child0);
+		astLabelLeafNodes(ast, node->child1);
+		return 0;
+	} else if(node->op == OP_STAR){
+		astLabelLeafNodes(ast, node->child0);
+		return 0;
+	} else if(node->op == OP_LITERAL){
+		node->leafNumber = pointerListAppend(ast->leafNodeList, node);
+		return 0;
+	} else if(node->op == OP_EPSILON){
+		return 0;
+	} else {
+		fprintf(stderr, "invalid op in  nullable()\n");
+		exit(1);
+	}
+}
+
+int astNullableAttribute(struct ast *ast, struct ast_node *node){
+	if(node->op == OP_OR){
+		astNullableAttribute(ast, node->child0);
+		astNullableAttribute(ast, node->child1);
+		node->nullable = node->child0->nullable || node->child1->nullable;
+		return 0;
+	} else if(node->op == OP_CAT){
+		astNullableAttribute(ast, node->child0);
+		astNullableAttribute(ast, node->child1);
+		node->nullable = node->child0->nullable && node->child1->nullable;
+		return 0;
+	} else if(node->op == OP_STAR){
+		astNullableAttribute(ast, node->child0);
+		node->nullable = 1;
+		return 0;
+	} else if(node->op == OP_LITERAL){
+		node->nullable = 0;
+		return 0;
+	} else if(node->op == OP_EPSILON){
+		node->nullable = 1;
+		return 0;
+	} else {
+		fprintf(stderr, "invalid op in  nullable()\n");
+		exit(1);
+	}
+}
+
+int astFirstposAttribute(struct ast *ast, struct ast_node *node){
+	if(node->op == OP_OR){
+		astFirstposAttribute(ast, node->child0);
+		astFirstposAttribute(ast, node->child1);
+		node->firstpos = newSetFromUnion(node->child0->firstpos, node->child1->firstpos);
+		return 0;
+	} else if(node->op == OP_CAT){
+		astFirstposAttribute(ast, node->child0);
+		astFirstposAttribute(ast, node->child1);
+		if(node->child0->nullable){
+			node->firstpos = newSetFromUnion(
+					node->child0->firstpos,
+					node->child1->firstpos);
+		} else {
+			node->firstpos = newSetFromSet(node->child0->firstpos);
+		}
+		return 0;
+	} else if(node->op == OP_STAR){
+		astFirstposAttribute(ast, node->child0);
+		node->firstpos = newSetFromSet(node->child0->firstpos);
+		return 0;
+	} else if(node->op == OP_LITERAL){
+		node->firstpos = newSetFromInteger(node->leafNumber);
+		return 0;
+	} else if(node->op == OP_EPSILON){
+		node->firstpos = newSetFromInteger(node->leafNumber);
+		// TODO: wtf here?
+		return 0;
+	} else {
+		fprintf(stderr, "invalid op in  nullable()\n");
+		exit(1);
+	}
+}
+
+
+
+int astLastposAttribute(struct ast *ast, struct ast_node *node){
+	if(node->op == OP_OR){
+		astLastposAttribute(ast, node->child0);
+		astLastposAttribute(ast, node->child1);
+
+		node->lastpos = newSetFromUnion(node->child0->lastpos, node->child1->lastpos);
+		return 0;
+	} else if(node->op == OP_CAT){
+		astLastposAttribute(ast, node->child0);
+		astLastposAttribute(ast, node->child1);
+
+		if(node->child1->nullable){
+			node->lastpos = newSetFromUnion(node->child0->lastpos,
+					node->child1->lastpos);
+		} else {
+			node->lastpos = newSetFromSet(node->child1->lastpos);
+		}
+		return 0;
+	} else if(node->op == OP_STAR){
+		astLastposAttribute(ast, node->child0);
+		node->lastpos = newSetFromSet(node->child0->lastpos);
+		return 0;
+	} else if(node->op == OP_LITERAL){
+		node->lastpos = newSetFromInteger(node->leafNumber);
+		return 0;
+	} else if(node->op == OP_EPSILON){
+		// TODO: wtf here?
+		node->lastpos = newSet();
+		return 0;
+	} else {
+		fprintf(stderr, "invalid op in  nullable()\n");
+		exit(1);
+	}
+}
+
+int astFollowposAttribute(struct ast *ast, struct ast_node *node){
+	if(node->op == OP_OR){
+		astFollowposAttribute(ast, node->child0);
+		astFollowposAttribute(ast, node->child1);
+
+		node->followpos = newSet();
+		return 0;
+	} else if(node->op == OP_CAT){
+		astFollowposAttribute(ast, node->child0);
+		astFollowposAttribute(ast, node->child1);
+
+		node->followpos = newSet();
+		struct set_iterator si;
+		int leafNumber;
+		si = setIterator(node->child0->lastpos);
+		while(nextSetItem(&si, &leafNumber)){
+			struct ast_node *leafNode;
+			assert(leafNumber < leafCount);
+			leafNode = leafIndex[leafNumber];
+			setAddSet(leafNode->followpos, node->child1->firstpos);
+		}
+		return 0;
+	} else if(node->op == OP_STAR){
+		astFollowposAttribute(ast, node->child0);
+
+		node->followpos = newSet();
+		struct set_iterator si;
+		int leafNumber;
+
+		si = setIterator(node->lastpos);
+		while(nextSetItem(&si, &leafNumber)){
+			struct ast_node *leafNode;
+			assert(leafNumber < leafCount);
+			leafNode = leafIndex[leafNumber];
+			setAddSet(leafNode->followpos, node->firstpos);
+		}
+		return 0;
+	} else if(node->op == OP_LITERAL){
+		node->followpos = newSet();
+		return 0;
+	} else if(node->op == OP_EPSILON){
+		node->followpos = newSet();
+		return 0;
+	} else {
+		fprintf(stderr, "unknown op: %d\n", node->op);
+		exit(1);
+	}
 }
 
 
@@ -211,7 +305,7 @@ int graphEmitNode(struct ast_node *node){
 			si = setIterator(node->firstpos);
 			while(nextSetItem(&si, &value)){
 				printf("%d ", value);
-			}	
+			}
 			printf("]\\n");
 		}
 		printf("lastpos: ");
@@ -305,4 +399,47 @@ void graphAST(struct ast_node *node){
 	printf("digraph G {\n");
 	graphASTNode(node);
 	printf("}\n");
+}
+
+void printAST(struct ast_node *node){
+	int i;
+	struct set_iterator si;
+	int value;
+
+	if(node->leafNumber >= 0){
+		printf("%d: nullable:[%s] ", node->leafNumber, node->nullable ? "YES" : "NO");
+		printf("firstpos:[ ");
+		si = setIterator(node->firstpos);
+		while(nextSetItem(&si, &value)){
+			printf("%d ", value);
+		}
+		printf("] lastpos:[ ");
+		si = setIterator(node->lastpos);
+		while(nextSetItem(&si, &value)){
+			printf("%d ", value);
+		}
+		printf("] followpos:[ ");
+		si = setIterator(node->followpos);
+		while(nextSetItem(&si, &value)){
+			printf("%d ", value);
+		}
+		printf("]\n");
+	}
+	if(node->child0){
+		printAST(node->child0);
+	}
+	if(node->child1){
+		printAST(node->child1);
+	}
+}
+
+
+
+int annotateAST(struct ast *ast){
+	astLabelLeafNodes(ast, ast->root);
+	astNullableAttribute(ast, ast->root);
+	astFirstposAttribute(ast, ast->root);
+	astLastposAttribute(ast, ast->root);
+	astFollowposAttribute(ast, ast->root);
+	return 0;
 }
