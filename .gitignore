@@ -20,3 +20,5 @@ regex_old/regex
 regex/lex
 regex/test_dfa
 lex/lex
+cpp/cpp
+cpp/test_lexer
