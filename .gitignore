@@ -17,3 +17,5 @@ expression/ll1
 expression/ll1table
 regex/regex
 regex_old/regex
+regex/lex
+regex/test_dfa
