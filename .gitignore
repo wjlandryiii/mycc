@@ -19,3 +19,4 @@ regex/regex
 regex_old/regex
 regex/lex
 regex/test_dfa
+lex/lex
