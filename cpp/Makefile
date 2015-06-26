@@ -1,4 +1,17 @@
-all: cpp test_lexer
+all: cpp test_lexer test_phase1 test_phase2
+
+
+phase1.o: phase1.c phase1.h
+	gcc -g -c -o $@ $<
+
+test_phase1.o: phase1.c phase1.h
+	gcc -DTESTING -g -c -o $@ $<
+
+phase2.o: phase2.c phase2.h phase1.h
+	gcc -g -c -o $@ $<
+
+test_phase2.o: phase2.c phase1.h phase1.h
+	gcc -DTESTING -g -c -o $@ $<
 
 escstr.o: escstr.c escstr.h
 	gcc -g -c -o $@ $<
@@ -20,3 +33,9 @@ test_lexer.o: lexer.c escstr.h
 
 test_lexer: test_lexer.o escstr.o
 	gcc -DTESTING -g -o $@ $^
+
+test_phase1: test_phase1.o
+	gcc -g -o $@ $^
+
+test_phase2: test_phase2.o phase1.o
+	gcc -g -o $@ $^
