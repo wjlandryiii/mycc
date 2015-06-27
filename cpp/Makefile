@@ -1,5 +1,7 @@
 all: cpp test_lexer test_phase1 test_phase2 test_phase3 test_stringbuf
 
+tokens.o: tokens.c tokens.h escstr.h
+	gcc -g -c -o $@ $<
 
 phase1.o: phase1.c phase1.h
 	gcc -g -c -o $@ $<
@@ -16,7 +18,7 @@ test_phase2.o: phase2.c phase1.h phase1.h
 phase3.o: phase3.c phase3.h phase2.h phase1.h stringbuf.h
 	gcc -g -c -o $@ $<
 
-test_phase3.o: phase3.c phase3.h phase2.h phase1.h stringbuf.h
+test_phase3.o: phase3.c phase3.h phase2.h phase1.h stringbuf.h escstr.h tokens.h
 	gcc -DTESTING -g -c -o $@ $<
 
 stringbuf.o: stringbuf.c stringbuf.h
@@ -53,7 +55,7 @@ test_phase1: test_phase1.o
 test_phase2: test_phase2.o phase1.o
 	gcc -g -o $@ $^
 
-test_phase3: test_phase3.o phase2.o phase1.o stringbuf.o
+test_phase3: test_phase3.o phase2.o phase1.o stringbuf.o escstr.o tokens.o
 	gcc -g -o $@ $^
 
 test_stringbuf: test_stringbuf.o

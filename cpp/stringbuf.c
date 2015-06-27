@@ -77,6 +77,22 @@ char *stringBufToSZ(struct string_buf *sb){
 	return s;
 }
 
+int stringBufCompareSZ(struct string_buf *sb, char *sz){
+
+	int i;
+	for(i = 0; i < sb->length; i++){
+		if(sb->buf[i] != *sz){
+			return sb->buf[i] - *sz;
+		}
+		sz++;
+	}
+	if(*sz != 0){
+		return 0 - *sz;
+	} else {
+		return 0;
+	}
+}
+
 
 #ifdef TESTING
 
