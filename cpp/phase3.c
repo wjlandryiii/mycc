@@ -561,9 +561,42 @@ int main(int argc, char *argv[]){
 	p3.p2 = &p2;
 	phase3Init(&p3);
 
+	printf("\033[31m\n");
 	token = phase3NextToken(&p3);
 	while(token.type != LT_EMPTY){
-		printPPToken(token);
+		/*
+		LT_EMPTY,
+		LT_HEADERNAME,
+		LT_IDENTIFIER,
+		LT_PPNUMBER,
+		LT_CHARACTERCONSTANT,
+		LT_STRINGLITERAL,
+		LT_PUNCTUATOR,
+		LT_WHITESPACE,
+		LT_NEWLINE,
+		*/
+		if(token.type == LT_HEADERNAME){
+			printf("\033[31m");
+		} else if(token.type == LT_IDENTIFIER){
+			if(token.name != PPTN_IDENTIFIER){
+				printf("\033[37m");
+			} else {
+				printf("\033[32m");
+			}
+		} else if(token.type == LT_PPNUMBER){
+			printf("\033[33m");
+		} else if(token.type == LT_CHARACTERCONSTANT){
+			printf("\033[34m");
+		} else if(token.type == LT_STRINGLITERAL){
+			printf("\033[35m");
+		} else if(token.type == LT_PUNCTUATOR){
+			printf("\033[36m");
+		} else {
+			printf("\033[39m");
+		}
+		printf("%s", token.lexeme);
+		printf("\033[39m");
+		//printPPToken(token);
 		token = phase3NextToken(&p3);
 	}
 	return 0;
