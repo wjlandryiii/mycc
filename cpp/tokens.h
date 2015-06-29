@@ -6,6 +6,7 @@
 #define TOKENS_H
 
 struct pptoken {
+	char *whiteSpace;
 	char *lexeme;
 	int type;
 	int name;
@@ -29,7 +30,6 @@ enum PPTOKEN_NAMES {
 /* line    */	PPTN_LINE,
 /* error   */	PPTN_ERROR,
 /* pragma  */	PPTN_PRAGMA,
-/*  \t     */	PPTN_WHITESPACE,
 /* \n      */	PPTN_NEWLINE,
 /* !=      */	PPTN_NE_OP,
 /* !       */	PPTN_EXLAMATIONMARK,
@@ -102,7 +102,6 @@ enum LEXEME_TYPES {
 	LT_CHARACTERCONSTANT,
 	LT_STRINGLITERAL,
 	LT_PUNCTUATOR,
-	LT_WHITESPACE,
 	LT_NEWLINE,
 };
 

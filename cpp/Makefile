@@ -4,7 +4,7 @@ all:	cpp \
 	test_phase1 \
 	test_phase2 \
 	test_phase3 \
-	test_phase4 \
+#	test_phase4 \
 	test_stringbuf \
 	test_statestack \
 	test_symtab

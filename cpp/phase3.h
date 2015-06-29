@@ -9,6 +9,7 @@ struct phase2;
 struct pptoken;
 
 struct phase3 {
+	int commentNewLineCount;
 	struct phase2 *p2;
 	int la[4];
 	int lb[3];

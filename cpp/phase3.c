@@ -1,7 +1,6 @@
 /*
  * Copyright 2015 Joseph Landry All Rights Reserved
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,17 +12,20 @@
 
 #include "tokens.h"
 
+/*
 enum LOOKBEHIND_TYPES {
 	LB_DONTCARE,
 	LB_HASH,
 	LB_NEWLINE,
 	LB_INCLUDE,
 };
+*/
 
 int phase3Init(struct phase3 *p3){
-	p3->lb[0] = LB_DONTCARE;
-	p3->lb[1] = LB_DONTCARE;
-	p3->lb[2] = LB_DONTCARE;
+	p3->commentNewLineCount = 0;
+	p3->lb[0] = PPTN_NEWLINE;
+	p3->lb[1] = PPTN_NEWLINE;
+	p3->lb[2] = PPTN_NEWLINE;
 	p3->la[0] = phase2NextChar(p3->p2);
 	p3->la[1] = phase2NextChar(p3->p2);
 	p3->la[2] = phase2NextChar(p3->p2);
@@ -39,6 +41,13 @@ static int eat(struct phase3 *p3){
 	p3->la[2] = p3->la[3];
 	p3->la[3] = phase2NextChar(p3->p2);
 	return c;
+}
+
+static int emit(struct phase3 *p3, struct pptoken token){
+	p3->lb[2] = p3->lb[1];
+	p3->lb[1] = p3->lb[0];
+	p3->lb[0] = token.name;
+	return 0;
 }
 
 int isSourceChar(int c){
@@ -81,13 +90,61 @@ struct pptoken phase3NextToken(struct phase3 *p3){
 	sb = newStringBuf();
 	assert(sb != NULL);
 
-	if(la1 == -1){
+	if(p3->commentNewLineCount > 0){
+		token.type = LT_NEWLINE;
+		token.name = PPTN_NEWLINE;
+		token.whiteSpace = "";
+		token.lexeme = "\n";
+
+		emit(p3, token);
+		p3->commentNewLineCount -= 1;
+		return token;
+	}
+
+
+	//Get all whitespace, including comments, first
+	struct string_buf *whiteSpaceBuf;
+	whiteSpaceBuf = newStringBuf();
+
+	while(la1==' ' || la1=='\t' || (la1=='/' && la2=='/') || (la1=='/' && la2=='*')){
+		while(la1 == ' ' || la1 == '\t'){
+			int c = eat(p3);
+			stringBufAppendChar(whiteSpaceBuf, c);
+		}
+		if(la1 == '/' && la2 == '/'){
+			eat(p3);
+			eat(p3);
+			stringBufAppendChar(whiteSpaceBuf, ' ');
+			while(la1 != '\n' && la1 != EOF){
+				eat(p3);
+			}
+		}
+		if(la1 == '/' && la2 == '*'){
+			eat(p3);
+			eat(p3);
+			stringBufAppendChar(whiteSpaceBuf, ' ');
+			while(la1 != EOF && !(la1 == '*' && la2 == '/')){
+				if(la1 == '\n'){
+					p3->commentNewLineCount += 1;
+				}
+				eat(p3);
+			}
+			if(la1 == '*' && la2 == '/'){
+				eat(p3);
+				eat(p3);
+			}
+		}
+	}
+
+	//
+
+	if(la1 == EOF){
 		type = LT_EMPTY;
 		type = PPTN_EOF;
 	} else if((la1 == '\"' || la1 == '<')
-			&& (p3->lb[2] == LB_NEWLINE
-				&& p3->lb[1] == LB_HASH
-				&& p3->lb[0] == LB_INCLUDE)){
+			&& (p3->lb[2] == PPTN_NEWLINE
+				&& p3->lb[1] == PPTN_HASH
+				&& p3->lb[0] == PPTN_INCLUDE)){
 		int delim;
 		type = LT_HEADERNAME;
 		name = PPTN_HEADERNAME;
@@ -111,7 +168,7 @@ struct pptoken phase3NextToken(struct phase3 *p3){
 		while(isAlpha(la1) || isDigit(la1) || la1 == '_'){
 			stringBufAppendChar(sb, eat(p3));
 		}
-		if(p3->lb[0] == LB_HASH && p3->lb[1] == LB_NEWLINE){
+		if(p3->lb[1] == PPTN_NEWLINE && p3->lb[0] == PPTN_HASH){
 			if(stringBufCompareSZ(sb, "if") == 0){
 				name = PPTN_IF;
 			} else if(stringBufCompareSZ(sb, "elif") == 0){
@@ -328,25 +385,6 @@ struct pptoken phase3NextToken(struct phase3 *p3){
 		name = PPTN_DIV_ASSIGN;
 		stringBufAppendChar(sb, eat(p3));
 		stringBufAppendChar(sb, eat(p3));
-	} else if(la1 == '/' && la2 == '/'){
-		type = LT_WHITESPACE;
-		name = PPTN_WHITESPACE;
-		while(la1 > 0 && la1 != '\n'){
-			eat(p3);
-		}
-		stringBufAppendChar(sb, ' ');
-	} else if(la1 == '/' && la2 == '*'){
-		type = LT_WHITESPACE;
-		name = PPTN_WHITESPACE;
-		while(la1 > 0 && (la1 != '*' || la2 != '/')){
-			eat(p3);
-		}
-		eat(p3);
-		eat(p3);
-		stringBufAppendChar(sb, ' ');
-		while(la1 == ' ' || la1 == '\t'){
-			stringBufAppendChar(sb, eat(p3));
-		}
 	} else if(la1 == '/'){
 		type = LT_PUNCTUATOR;
 		name = PPTN_SLASH;
@@ -470,12 +508,6 @@ struct pptoken phase3NextToken(struct phase3 *p3){
 		type = LT_PUNCTUATOR;
 		name = PPTN_TILDE;
 		stringBufAppendChar(sb, eat(p3));
-	} else if(la1 == ' ' || la1 == '\t'){
-		type = LT_WHITESPACE;
-		name = PPTN_WHITESPACE;
-		while(la1 == ' ' || la1 == '\t'){
-			stringBufAppendChar(sb, eat(p3));
-		}
 	} else if(la1 == '\n'){
 		type = LT_NEWLINE;
 		name = PPTN_NEWLINE;
@@ -493,20 +525,9 @@ struct pptoken phase3NextToken(struct phase3 *p3){
 	token.type = type;
 	token.name = name;
 	token.lexeme = stringBufToSZ(sb);
+	token.whiteSpace = stringBufToSZ(whiteSpaceBuf);
 
-	if(type != LT_WHITESPACE){
-		p3->lb[2] = p3->lb[1];
-		p3->lb[1] = p3->lb[0];
-		if(type == LT_PUNCTUATOR && token.lexeme[0] == '#' && token.lexeme[1] == '\0'){
-			p3->lb[0] = LB_HASH;
-		} else if(type == LT_NEWLINE){
-			p3->lb[0] = LB_NEWLINE;
-		} else if(type == LT_IDENTIFIER && strcmp(token.lexeme, "include") == 0){
-			p3->lb[0] = LB_INCLUDE;
-		} else {
-			p3->lb[0] = LB_DONTCARE;
-		}
-	}
+	emit(p3, token);
 
 	return token;
 
@@ -521,36 +542,13 @@ struct pptoken phase3NextToken(struct phase3 *p3){
 #include "phase1.h"
 #include "escstr.h"
 
-int main(int argc, char *argv[]){
-	struct phase1 p1;
-	struct phase2 p2;
-	struct phase3 p3;
+void colorTokens(struct phase3 *p3){
 	struct pptoken token;
 
-	//p1.sourceFile = fopen("tests/helloworld.c", "r");
-	p1.sourceFile = fopen("phase3.c", "r");
-	phase1Init(&p1);
+	token = phase3NextToken(p3);
+	while(token.name != PPTN_EOF){
+		printf("%s", token.whiteSpace);
 
-	p2.p1 = &p1;
-	phase2Init(&p2);
-
-	p3.p2 = &p2;
-	phase3Init(&p3);
-
-	printf("\033[31m\n");
-	token = phase3NextToken(&p3);
-	while(token.type != LT_EMPTY){
-		/*
-		LT_EMPTY,
-		LT_HEADERNAME,
-		LT_IDENTIFIER,
-		LT_PPNUMBER,
-		LT_CHARACTERCONSTANT,
-		LT_STRINGLITERAL,
-		LT_PUNCTUATOR,
-		LT_WHITESPACE,
-		LT_NEWLINE,
-		*/
 		if(token.type == LT_HEADERNAME){
 			printf("\033[31m");
 		} else if(token.type == LT_IDENTIFIER){
@@ -571,10 +569,29 @@ int main(int argc, char *argv[]){
 			printf("\033[39m");
 		}
 		printf("%s", token.lexeme);
-		printf("\033[39m");
+		if(token.name != PPTN_NEWLINE){
+			printf("\033[39m");
+		}
 		//printPPToken(token);
-		token = phase3NextToken(&p3);
+		token = phase3NextToken(p3);
 	}
+}
+
+int main(int argc, char *argv[]){
+	struct phase1 p1;
+	struct phase2 p2;
+	struct phase3 p3;
+
+	//p1.sourceFile = fopen("tests/helloworld.c", "r");
+	p1.sourceFile = fopen("phase3.c", "r");
+	phase1Init(&p1);
+
+	p2.p1 = &p1;
+	phase2Init(&p2);
+
+	p3.p2 = &p2;
+	phase3Init(&p3);
+	colorTokens(&p3);
 	return 0;
 }
 #endif

@@ -28,7 +28,6 @@ char *PPTOKEN_STRINGS[PPTN_NTOKENS] = {
 	"PPTN_LINE",
 	"PPTN_ERROR",
 	"PPTN_PRAGMA",
-	"PPTN_WHITESPACE",
 	"PPTN_NEWLINE",
 	"PPTN_NE_OP",
 	"PPTN_EXLAMATIONMARK",
@@ -266,11 +265,7 @@ void test_PPTokenList(){
 	ppTokenListAppend(list, token);
 	token.name = PPTN_DEFINE;
 	ppTokenListAppend(list, token);
-	token.name = PPTN_WHITESPACE;
-	ppTokenListAppend(list, token);
 	token.name = PPTN_IDENTIFIER;
-	ppTokenListAppend(list, token);
-	token.name = PPTN_WHITESPACE;
 	ppTokenListAppend(list, token);
 	token.name = PPTN_PPNUMBER;
 	ppTokenListAppend(list, token);
@@ -282,12 +277,8 @@ void test_PPTokenList(){
 	assert(ppTokenListAtIndex(list, 1, &token) == 0);
 	assert(token.name == PPTN_DEFINE);
 	assert(ppTokenListAtIndex(list, 2, &token) == 0);
-	assert(token.name == PPTN_WHITESPACE);
-	assert(ppTokenListAtIndex(list, 3, &token) == 0);
 	assert(token.name == PPTN_IDENTIFIER);
 	assert(ppTokenListAtIndex(list, 4, &token) == 0);
-	assert(token.name == PPTN_WHITESPACE);
-	assert(ppTokenListAtIndex(list, 5, &token) == 0);
 	assert(token.name == PPTN_PPNUMBER);
 	assert(ppTokenListAtIndex(list, 6, &token) == 0);
 	assert(token.name == PPTN_NEWLINE);
