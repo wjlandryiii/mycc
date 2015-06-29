@@ -98,31 +98,113 @@
 
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+
+#include "phase4.h"
 #include "phase3.h"
+#include "tokens.h"
+#include "statestack.h"
 
 enum SIMPLE_STATES {
-	SS_GROUPPART,
-	SS_IFSECTION,
-	SS_CONTROLSECTION,
-	SS_TEXTLINE,
-	SS_NONDIRECTIVE,
+	START_LINE,
+	TEXT_LINE,
 };
 
 int phase4Init(struct phase4 *p4){
-	p4->state = SS_GROUPPART;
+	p4->stateStack = newStateStack();
+	stateStackPush(p4->stateStack, START_LINE);
+	p4->lookAhead[0] = phase3NextToken(p4->p3);
+	p4->lookAhead[1] = phase3NextToken(p4->p3);
+	p4->lookAhead[2] = phase3NextToken(p4->p3);
+	p4->lookAhead[3] = phase3NextToken(p4->p3);
 	return 0;
 }
 
-struct token phase4NextToken(struct phase4 *p4){
-	struct token token;
+static struct pptoken eat(struct phase4 *p4){
+	struct pptoken token;
 
-	switch(p4->state){
-	case SS_GROUPPART:
-	case SS_IFSECTION:
-	case SS_CONTROLSECTION:
-	case SS_TEXTLINE:
-	case SS_NONDIRECTIVE:
+	token = p4->lookAhead[0];
+	p4->lookAhead[0] = p4->lookAhead[1];
+	p4->lookAhead[1] = p4->lookAhead[2];
+	p4->lookAhead[2] = p4->lookAhead[3];
+	p4->lookAhead[3] = phase3NextToken(p4->p3);
+	return token;
+}
+
+static int isLineIfSection(struct pptoken_list *lineList){
+	/*
+	 <if-section>
+		: "#" "if" <constant-expression> "\n" <group>?
+		| "#" "ifdef" "%IDENTIFIER%" "\n" <group>?
+		| "#" "ifndef"  "%IDENTIFIER%" "\n" <group>?
+		;
+	*/
+
+	struct pptoken token;
+	int i;
+
+	i = 0;
+
+	// TODO: left off here
+	//ppTokenListAtIndex(list, i
+
+	return 0;
+}
+
+
+struct pptoken phase4NextToken(struct phase4 *p4){
+	struct pptoken token;
+
+	int state = stateStackPop(p4->stateStack);
+
+nextState:
+	if(state == START_LINE){
+		goto startLine;
+	} else if(state == TEXT_LINE){
+		goto textLine;
+	} else {
+		fprintf(stderr, "unknown next state\n");
+		exit(1);
 	}
+
+startLine:
+	struct pptoken_list *lineList;
+	lineList = newPPTokenList();
+
+	token = eat();
+	while(token.name != LL_NEWLINE && token.name != LT_EMTPY){
+		ppTokenListAppend(lineList, token);
+		token = eat();
+	}
+
+	if(isLineIfSection(lineList)){
+
+	} else if(isLineControlLine(lineList)){
+
+	} else if(isLineTextLine(lineList)){
+
+	} else if(isLineNonDirective(lineList)){
+
+	} else {
+		fprintf(stderr, "unknown line type\n");
+		exit(1);
+	}
+
+
+textLine:
+	token = eat(p4);
+	if(token.name != PPTN_NEWLINE){
+		stateStackPush(p4->stateStack, TEXT_LINE);
+		return token;
+	} else {
+		stateStackPush(p4->stateStack, START_LINE);
+		return token;
+	}
+
 	return token;
 }
 
@@ -138,7 +220,8 @@ int main(int argc, char *argv[]){
 	struct phase1 p1;
 	struct phase2 p2;
 	struct phase3 p3;
-	struct token token;
+	struct phase4 p4;
+	struct pptoken token;
 
 	p1.sourceFile = fopen("tests/defines.c", "r");
 	phase1Init(&p1);
@@ -149,10 +232,13 @@ int main(int argc, char *argv[]){
 	p3.p2 = &p2;
 	phase3Init(&p3);
 
-	token = phase3NextToken(&p3);
+	p4.p3 = &p3;
+	phase4Init(&p4);
+
+	token = phase4NextToken(&p4);
 	while(token.type != LT_EMPTY){
-		printf("LEXEME:%s\n", token.lexeme);
-		token = phase3NextToken(&p3);
+		printf("%s", token.lexeme);
+		token = phase4NextToken(&p4);
 	}
 	return 0;
 }

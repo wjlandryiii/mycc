@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "tokens.h"
 #include "escstr.h"
@@ -84,3 +85,222 @@ void printPPToken(struct pptoken pptoken){
 	puts_escaped(pptoken.lexeme, pptoken.lexeme + strlen(pptoken.lexeme));
 	printf("\", name:%s]\n", PPTOKEN_STRINGS[pptoken.name]);
 }
+
+
+#define PPTOKEN_QUEUE_DEFAULT_SIZE (2)
+
+struct pptoken_queue {
+	struct pptoken *buf;
+	int head;
+	int tail;
+	int size;
+};
+
+struct pptoken_queue *newPPTokenQueue(){
+	struct pptoken_queue *queue;
+
+	queue = calloc(1, sizeof(*queue));
+	assert(queue != NULL);
+
+	queue->size = PPTOKEN_QUEUE_DEFAULT_SIZE;
+	queue->buf = calloc(queue->size, sizeof(struct pptoken));
+	assert(queue->buf != NULL);
+
+	queue->head = 0;
+	queue->tail = 0;
+	return queue;
+}
+
+void freePPTokenQueue(struct pptoken_queue *queue){
+	free(queue->buf);
+	free(queue);
+}
+
+
+static int ppTokenQueueShift(struct pptoken_queue *queue){
+	memmove(queue->buf, queue->buf+queue->head,
+			(queue->tail - queue->head) * sizeof(struct pptoken));
+	queue->tail = queue->tail - queue->head;
+	queue->head = 0;
+	return 0;
+}
+
+static int ppTokenQueueIncreaseSize(struct pptoken_queue *queue){
+	int newSize = queue->size + 32;
+	struct pptoken *newBuf;
+
+	newBuf = realloc(queue->buf, newSize * sizeof(struct pptoken));
+	assert(newBuf != NULL);
+
+	queue->buf = newBuf;
+	queue->size = newSize;
+	return 0;
+}
+
+int ppTokenQueueEnqueue(struct pptoken_queue *queue, struct pptoken token){
+	if(queue->tail >= queue->size){
+		if(queue->head > 0){
+			ppTokenQueueShift(queue);
+		} else {
+			ppTokenQueueIncreaseSize(queue);
+		}
+	}
+	assert(queue->tail < queue->size);
+
+	queue->buf[queue->tail] = token;
+	queue->tail += 1;
+	return 0;
+}
+
+int ppTokenQueueDequeue(struct pptoken_queue *queue, struct pptoken *tokenOut){
+	if(queue->head < queue->tail){
+		*tokenOut = queue->buf[queue->head];
+		queue->head += 1;
+		return 0;
+	} else {
+		return -1;
+	}
+}
+
+
+#define PPTOKENLIST_DEFAULT_SIZE (32)
+#define PPTOKENLIST_INC_SIZE (32)
+
+struct pptoken_list {
+	struct pptoken *buf;
+	int size;
+	int count;
+};
+
+
+struct pptoken_list *newPPTokenList(){
+	struct pptoken_list *list;
+
+	list = calloc(1, sizeof(*list));
+	assert(list != NULL);
+	list->count = 0;
+	list->size = PPTOKENLIST_DEFAULT_SIZE;
+	list->buf = calloc(list->size, sizeof(struct pptoken));
+	return list;
+}
+
+void freePPTokenList(struct pptoken_list *list){
+	free(list->buf);
+	list->buf = NULL;
+	free(list);
+}
+
+int ppTokenListAtIndex(struct pptoken_list *list, int index, struct pptoken *tokenOut){
+	assert(0 <= index || index < list->count);
+	*tokenOut = list->buf[index];
+	return 0;
+}
+
+static int ppTokenListIncreaseSize(struct pptoken_list *list){
+	int newSize;
+	struct pptoken *newBuf;
+
+	newSize = list->size + PPTOKENLIST_INC_SIZE;
+	newBuf = realloc(list->buf, newSize);
+	assert(newBuf != NULL);
+	list->buf = newBuf;
+	list->size = newSize;
+	return 0;
+}
+
+int ppTokenListAppend(struct pptoken_list *list, struct pptoken token){
+	if(list->size <= list->count){
+		ppTokenListIncreaseSize(list);
+	}
+	assert(list->count < list->size);
+
+	list->buf[list->count] = token;
+	list->count += 1;
+	return 0;
+}
+
+
+
+
+
+
+#ifdef TESTING
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+void test_PPTokenQueue(){
+	struct pptoken_queue *queue;
+	struct pptoken token;
+
+	queue = newPPTokenQueue();
+	token.name = 1; ppTokenQueueEnqueue(queue, token);
+	token.name = 2; ppTokenQueueEnqueue(queue, token);
+	token.name = 3; ppTokenQueueEnqueue(queue, token);
+	token.name = 4; ppTokenQueueEnqueue(queue, token);
+
+	assert(ppTokenQueueDequeue(queue, &token) == 0);
+	assert(token.name == 1);
+	assert(ppTokenQueueDequeue(queue, &token) == 0);
+	assert(token.name == 2);
+	assert(ppTokenQueueDequeue(queue, &token) == 0);
+	assert(token.name == 3);
+	assert(ppTokenQueueDequeue(queue, &token) == 0);
+	assert(token.name == 4);
+	freePPTokenQueue(queue);
+	printf("OK\n");
+}
+
+
+
+
+void test_PPTokenList(){
+	struct pptoken_list *list;
+	struct pptoken token;
+
+	list = newPPTokenList();
+
+	token.name = PPTN_HASH;
+	ppTokenListAppend(list, token);
+	token.name = PPTN_DEFINE;
+	ppTokenListAppend(list, token);
+	token.name = PPTN_WHITESPACE;
+	ppTokenListAppend(list, token);
+	token.name = PPTN_IDENTIFIER;
+	ppTokenListAppend(list, token);
+	token.name = PPTN_WHITESPACE;
+	ppTokenListAppend(list, token);
+	token.name = PPTN_PPNUMBER;
+	ppTokenListAppend(list, token);
+	token.name = PPTN_NEWLINE;
+	ppTokenListAppend(list, token);
+
+	assert(ppTokenListAtIndex(list, 0, &token) == 0);
+	assert(token.name == PPTN_HASH);
+	assert(ppTokenListAtIndex(list, 1, &token) == 0);
+	assert(token.name == PPTN_DEFINE);
+	assert(ppTokenListAtIndex(list, 2, &token) == 0);
+	assert(token.name == PPTN_WHITESPACE);
+	assert(ppTokenListAtIndex(list, 3, &token) == 0);
+	assert(token.name == PPTN_IDENTIFIER);
+	assert(ppTokenListAtIndex(list, 4, &token) == 0);
+	assert(token.name == PPTN_WHITESPACE);
+	assert(ppTokenListAtIndex(list, 5, &token) == 0);
+	assert(token.name == PPTN_PPNUMBER);
+	assert(ppTokenListAtIndex(list, 6, &token) == 0);
+	assert(token.name == PPTN_NEWLINE);
+
+	printf("OK\n");
+}
+
+
+
+int main(int argc, char *argv[]){
+	test_PPTokenQueue();
+	test_PPTokenList();
+	return 0;
+}
+
+#endif

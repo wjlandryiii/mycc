@@ -82,7 +82,48 @@ enum PPTOKEN_NAMES {
 		PPTN_NTOKENS,
 };
 
+/*
+ * preprocessing-token:
+ *	header-name
+ *	identifier
+ *	pp-number
+ *	character-constant
+ *	string-literal
+ *	punctuator
+ *	whitespace
+ *	newline
+ */
+
+enum LEXEME_TYPES {
+	LT_EMPTY,
+	LT_HEADERNAME,
+	LT_IDENTIFIER,
+	LT_PPNUMBER,
+	LT_CHARACTERCONSTANT,
+	LT_STRINGLITERAL,
+	LT_PUNCTUATOR,
+	LT_WHITESPACE,
+	LT_NEWLINE,
+};
+
 extern char *PPTOKEN_STRINGS[PPTN_NTOKENS];
 void printPPToken(struct pptoken pptoken);
+
+
+struct pptoken_queue;
+
+struct pptoken_queue *newPPTokenQueue();
+void freePPTokenQueue(struct pptoken_queue *queue);
+int ppTokenQueueEnqueue(struct pptoken_queue *queue, struct pptoken token);
+int ppTokenQueueDequeue(struct pptoken_queue *queue, struct pptoken *tokenOut);
+
+
+struct pptoken_list;
+
+struct pptoken_list *newPPTokenList();
+void freePPTokenList(struct pptoken_list *list);
+int ppTokenListAtIndex(struct pptoken_list *list, int index, struct pptoken *tokenOut);
+int ppTokenListAppend(struct pptoken_list *list, struct pptoken token);
+
 
 #endif

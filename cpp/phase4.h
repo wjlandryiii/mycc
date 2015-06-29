@@ -5,6 +5,8 @@
 #ifndef PHASE4_H
 #define PHASE4_H
 
+#include "tokens.h"
+
 /*
 
 \n
@@ -42,15 +44,17 @@ include
 
 
 struct phase3;
-struct token;
+struct pptoken;
+struct state_stack;
 
 struct phase4 {
 	struct phase3 *p3;
-	int state;
+	struct state_stack *stateStack;
+	struct pptoken lookAhead[4];
 };
 
 
 int phase4Init(struct phase4 *p4);
-struct token phase4NextToken(struct phase4 *p4);
+struct pptoken phase4NextToken(struct phase4 *p4);
 
 #endif

@@ -41,30 +41,6 @@ static int eat(struct phase3 *p3){
 	return c;
 }
 
-/*
- * preprocessing-token:
- *	header-name
- *	identifier
- *	pp-number
- *	character-constant
- *	string-literal
- *	punctuator
- *	whitespace
- *	newline
- */
-
-enum LEXEME_TYPES {
-	LT_EMPTY,
-	LT_HEADERNAME,
-	LT_IDENTIFIER,
-	LT_PPNUMBER,
-	LT_CHARACTERCONSTANT,
-	LT_STRINGLITERAL,
-	LT_PUNCTUATOR,
-	LT_WHITESPACE,
-	LT_NEWLINE,
-};
-
 int isSourceChar(int c){
 	if(c == '\n' || c == '\t'){
 		return 1;
