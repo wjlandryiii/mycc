@@ -51,6 +51,7 @@ struct phase4 {
 	struct phase3 *p3;
 	struct state_stack *stateStack;
 	struct pptoken lookAhead[4];
+	struct hash_table *symbolTable;
 };
 
 

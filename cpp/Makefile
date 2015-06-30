@@ -4,10 +4,26 @@ all:	cpp \
 	test_phase1 \
 	test_phase2 \
 	test_phase3 \
-#	test_phase4 \
+	test_phase4 \
 	test_stringbuf \
 	test_statestack \
-	test_symtab
+	test_symtab \
+	test_hashtable \
+	test_set
+
+set.o: set.c set.h
+	gcc -g -c -o $@ $<
+
+test_set.o: set.c set.h
+	gcc -DTESTING -g -c -o $@ $<
+
+
+hashtable.o: hashtable.c hashtable.h
+	gcc -g -c -o $@ $<
+
+test_hashtable.o: hashtable.c hashtable.h
+	gcc -DTESTING -g -c -o $@ $<
+
 
 symtab.o: symtab.c symtab.h
 	gcc -g -c -o $@ $<
@@ -52,7 +68,7 @@ stringbuf.o: stringbuf.c stringbuf.h
 test_stringbuf.o: stringbuf.c stringbuf.h
 	gcc -DTESTING -g -c -o $@ $<
 
-test_phase4.o: phase4.c phase4.h phase3.h tokens.h statestack.h
+test_phase4.o: phase4.c phase4.h phase3.h tokens.h statestack.h hashtable.h set.h
 	gcc -DTESTING -g -c -o $@ $<
 
 
@@ -89,7 +105,8 @@ test_phase2: test_phase2.o phase1.o
 test_phase3: test_phase3.o phase2.o phase1.o stringbuf.o escstr.o tokens.o
 	gcc -g -o $@ $^
 
-test_phase4: test_phase4.o phase3.o phase2.o phase1.o stringbuf.o escstr.o tokens.o statestack.o
+test_phase4: test_phase4.o phase3.o phase2.o phase1.o \
+		stringbuf.o escstr.o tokens.o statestack.o hashtable.o set.o
 	gcc -g -o $@ $^
 
 test_stringbuf: test_stringbuf.o
@@ -99,6 +116,12 @@ test_statestack: test_statestack.o
 	gcc -g -o $@ $^
 
 test_symtab: test_symtab.o
+	gcc -g -o $@ $^
+
+test_hashtable: test_hashtable.o
+	gcc -g -o $@ $^
+
+test_set: test_set.o
 	gcc -g -o $@ $^
 
 .PHONY: clean

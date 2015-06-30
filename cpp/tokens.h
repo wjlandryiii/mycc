@@ -27,6 +27,7 @@ enum PPTOKEN_NAMES {
 /* endif   */	PPTN_ENDIF,
 /* include */	PPTN_INCLUDE,
 /* define  */	PPTN_DEFINE,
+/* undef   */	PPTN_UNDEF,
 /* line    */	PPTN_LINE,
 /* error   */	PPTN_ERROR,
 /* pragma  */	PPTN_PRAGMA,

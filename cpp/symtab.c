@@ -209,6 +209,7 @@ static int hashTableIncreaseSize(struct hash_table *ht){
 		}
 		e++;
 	}
+	free(ht->buf);
 	ht->buf = newBuf;
 	ht->size = newSize;
 	return 0;

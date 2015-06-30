@@ -98,6 +98,28 @@
 
 */
 
+
+/*
+# <non-directive>
+
+#if <constant-expression> "\n" <group>?
+#ifdef "%IDENTIFIER%" "\n" <group>?
+#ifndef  "%IDENTIFIER%" "\n" <group>?
+#elif <constant-expression> "\n" <group>?
+#else "\n" <group>?
+#endif "\n"
+#include <pp-tokens> "\n"
+#define "%IDENTIFIER%" <replacement-list> "\n"
+#define "%IDENTIFIER%" "(" <identifier-list>? ")" <replacement-list> "\n"
+#define "%IDENTIFIER%" "(" "..." ")" <replacement-list> "\n"
+#define "%IDENTIFIER%" "(" <identifier-list> "," "..." ")" <replacement-list> "\n"
+#undef "%IDENTIFIER%" "\n"
+#line <pp-tokens> "\n"
+#error <pp-tokens>? "\n"
+#pragma <pp-tokens>? "\n"
+#\n
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -108,6 +130,15 @@
 #include "phase3.h"
 #include "tokens.h"
 #include "statestack.h"
+#include "hashtable.h"
+
+
+struct macro_entry {
+	char *name;
+	int type;
+	struct pptoken_list *replacementList;
+};
+
 
 enum SIMPLE_STATES {
 	START_LINE,
@@ -155,57 +186,192 @@ static int isLineIfSection(struct pptoken_list *lineList){
 	return 0;
 }
 
+static struct pptoken ppDefineLine(struct phase4 *p4){
+	/*
+	#define ID <replacement-list>\n
+	#define ID( <identifier-list>? ")" <replacement-list>\n
+	#define ID(...) <replacement-list>\n"
+	#define ID( <identifier-list>, ...) <replacement-list>\n
+	*/
 
-struct pptoken phase4NextToken(struct phase4 *p4){
+	struct pptoken nameToken;
+	struct pptoken_list *identifierList;
+	struct pptoken_list *replacementList;
+	struct macro_entry *macroEntry;
+	int found;
+
+	if(p4->lookAhead[0].name == PPTN_HASH){
+		eat(p4);
+	} else {
+		fprintf(stderr, "define line didn't begin with '#'\n");
+		exit(1);
+	}
+	if(p4->lookAhead[0].name == PPTN_DEFINE){
+		eat(p4);
+	} else {
+		fprintf(stderr, "define line didn't have 'define' keyword\n");
+		exit(1);
+	}
+	if(p4->lookAhead[0].name == PPTN_IDENTIFIER){
+		nameToken = eat(p4);
+	}
+
+	if(p4->lookAhead[0].name == PPTN_LPAREN
+			&& (p4->lookAhead[0].whiteSpace == NULL
+				|| strlen(p4->lookAhead[0].whiteSpace) == 0)){
+		fprintf(stderr, "function style macros not implemented yet!\n");
+		exit(1);
+	} else {
+		replacementList = newPPTokenList();
+		while(p4->lookAhead[0].name != PPTN_NEWLINE && p4->lookAhead[0].name != PPTN_EOF){
+			ppTokenListAppend(replacementList, eat(p4));
+		}
+
+		hashTableGetValue(p4->symbolTable, nameToken.lexeme, (void**)&macroEntry, &found);
+		if(!found){
+			macroEntry = calloc(1, sizeof(struct macro_entry));
+			assert(macroEntry != NULL);
+			macroEntry->name = nameToken.lexeme;
+			macroEntry->type = 1;
+			macroEntry->replacementList = replacementList;
+			hashTableSetValue(p4->symbolTable, nameToken.lexeme, macroEntry);
+		} else {
+			fprintf(stderr, "macro already defined! %s\n", nameToken.lexeme);
+			exit(1);
+		}
+	}
+	fprintf(stderr, "DEFINE: %s\n", nameToken.lexeme);
+	return eat(p4);
+}
+
+static struct pptoken ppUndefLine(struct phase4 *p4){
+	struct pptoken nameToken;
+	struct macro_entry *macroEntry;
+	int found;
+
+	if(p4->lookAhead[0].name == PPTN_HASH){
+		eat(p4);
+	} else {
+		fprintf(stderr, "undef line didn't begin with '#'\n");
+		exit(1);
+	}
+	if(p4->lookAhead[0].name == PPTN_UNDEF){
+		eat(p4);
+	} else {
+		fprintf(stderr, "undef line didn't have 'undef' keyword\n");
+		exit(1);
+	}
+
+	if(p4->lookAhead[0].name == PPTN_IDENTIFIER){
+		nameToken = eat(p4);
+	} else {
+		fprintf(stderr, "undef expected identifier");
+		exit(1);
+	}
+
+	hashTableRemove(p4->symbolTable, nameToken.lexeme, (void**)&macroEntry, &found);
+	if(found){
+		freePPTokenList(macroEntry->replacementList);
+		free(macroEntry);
+	}
+
+
+	if(p4->lookAhead[0].name == PPTN_NEWLINE){
+		fprintf(stderr, "UNDEF %s\n", nameToken.lexeme);
+		return eat(p4);
+	} else {
+		fprintf(stderr, "undef line contained extra tokens\n");
+		exit(1);
+	}
+}
+
+static struct pptoken ppLineUnimplemented(struct phase4 *p4){
 	struct pptoken token;
 
-	int state = stateStackPop(p4->stateStack);
-
-nextState:
-	if(state == START_LINE){
-		goto startLine;
-	} else if(state == TEXT_LINE){
-		goto textLine;
-	} else {
-		fprintf(stderr, "unknown next state\n");
-		exit(1);
-	}
-
-startLine:
-	struct pptoken_list *lineList;
-	lineList = newPPTokenList();
-
-	token = eat();
-	while(token.name != LL_NEWLINE && token.name != LT_EMTPY){
-		ppTokenListAppend(lineList, token);
-		token = eat();
-	}
-
-	if(isLineIfSection(lineList)){
-
-	} else if(isLineControlLine(lineList)){
-
-	} else if(isLineTextLine(lineList)){
-
-	} else if(isLineNonDirective(lineList)){
-
-	} else {
-		fprintf(stderr, "unknown line type\n");
-		exit(1);
-	}
-
-
-textLine:
 	token = eat(p4);
-	if(token.name != PPTN_NEWLINE){
-		stateStackPush(p4->stateStack, TEXT_LINE);
-		return token;
+	while(token.name != PPTN_EOF && token.name != PPTN_NEWLINE){
+		token = eat(p4);
+	}
+	return token;
+}
+
+static struct pptoken ppTextLine(struct phase4 *p4){
+	struct pptoken token;
+	struct macro_entry *macroEntry;
+	int found;
+
+	token = eat(p4);
+
+	if(token.name == PPTN_IDENTIFIER){
+		hashTableGetValue(p4->symbolTable, token.lexeme, (void**)&macroEntry, &found);
+		fprintf(stderr, "ID: %s\n", token.lexeme);
+		if(found){
+			fprintf(stderr, "FOUND!\n");
+		}
+	}
+	return token;
+}
+
+struct pptoken phase4NextToken(struct phase4 *p4){
+#define la1 (p4->lookAhead[0].name)
+#define la2 (p4->lookAhead[1].name)
+#define la3 (p4->lookAhead[2].name)
+#define la4 (p4->lookAhead[2].name)
+	struct pptoken token;
+
+	//int state = stateStackPop(p4->stateStack);
+
+	if(la1 == PPTN_HASH && la2 == PPTN_IF){
+		return ppLineUnimplemented(p4);
+	} else if(la1 == PPTN_HASH && la2 == PPTN_IFDEF){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_IFNDEF){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_ELIF){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_ELSE){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_ENDIF){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_INCLUDE){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_DEFINE){
+		return ppDefineLine(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_UNDEF){
+		return ppUndefLine(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_LINE){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_ERROR){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_PRAGMA){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH && la2 == PPTN_NEWLINE){
+		return ppLineUnimplemented(p4);
+
+	} else if(la1 == PPTN_HASH){
+		return ppLineUnimplemented(p4);
+
 	} else {
-		stateStackPush(p4->stateStack, START_LINE);
-		return token;
+		// text line
+		return ppTextLine(p4);
+
 	}
 
-	return token;
+#undef la1
+#undef la2
+#undef la3
+#undef la4
 }
 
 
@@ -223,7 +389,9 @@ int main(int argc, char *argv[]){
 	struct phase4 p4;
 	struct pptoken token;
 
-	p1.sourceFile = fopen("tests/defines.c", "r");
+	//p1.sourceFile = fopen("phase3.c", "r");
+	//p1.sourceFile = fopen("tests/defines.c", "r");
+	p1.sourceFile = fopen("tests/define.c", "r");
 	phase1Init(&p1);
 
 	p2.p1 = &p1;
@@ -233,14 +401,15 @@ int main(int argc, char *argv[]){
 	phase3Init(&p3);
 
 	p4.p3 = &p3;
+	p4.symbolTable = newHashTable();
 	phase4Init(&p4);
 
 	token = phase4NextToken(&p4);
-	while(token.type != LT_EMPTY){
+	while(token.name != PPTN_EOF){
+		printf("%s", token.whiteSpace);
 		printf("%s", token.lexeme);
 		token = phase4NextToken(&p4);
 	}
 	return 0;
 }
 #endif
-

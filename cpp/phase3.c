@@ -185,6 +185,8 @@ struct pptoken phase3NextToken(struct phase3 *p3){
 				name = PPTN_IFDEF;
 			} else if(stringBufCompareSZ(sb, "define") == 0){
 				name = PPTN_DEFINE;
+			} else if(stringBufCompareSZ(sb, "undef") == 0){
+				name = PPTN_UNDEF;
 			} else if(stringBufCompareSZ(sb, "ifndef") == 0){
 				name = PPTN_IFNDEF;
 			} else if(stringBufCompareSZ(sb, "pragma") == 0){
@@ -534,6 +536,7 @@ struct pptoken phase3NextToken(struct phase3 *p3){
 #undef la1
 #undef la2
 #undef la3
+#undef la4
 }
 
 
