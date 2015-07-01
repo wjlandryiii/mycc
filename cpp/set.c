@@ -134,15 +134,16 @@ int stringSetInsertString(struct string_set *set, char *s){
 	return 0;
 }
 
-int stringSetIsMember(struct string_set *set, char *s, int *member){
+int stringSetIsMember(struct string_set *set, char *s){
 	int hash;
 	int n;
 
+	/*
 	if(set->size / 2 < set->count){
 		stringSetIncreaseSize(set);
 	}
 	assert(set->count < set->size);
-
+	*/
 
 	hash = stringSetHashFn(s);
 
@@ -150,8 +151,7 @@ int stringSetIsMember(struct string_set *set, char *s, int *member){
 	int present;
 
 	linearProbe(set->entries, set->size, hash, s, &foundEntry, &present);
-	*member = present;
-	return 0;
+	return present;
 }
 
 #ifdef TESTING
@@ -178,11 +178,11 @@ void test_stringSet(void){
 	i = 0;
 	while(testStrings[i]){
 		printf("GET: %s\n", testStrings[i]);
-		stringSetIsMember(stringSet, testStrings[i], &member);
+		member = stringSetIsMember(stringSet, testStrings[i]);
 		assert(member == 0);
 		printf("SET: %s\n", testStrings[i]);
 		stringSetInsertString(stringSet, testStrings[i]);
-		stringSetIsMember(stringSet, testStrings[i], &member);
+		member = stringSetIsMember(stringSet, testStrings[i]);
 		assert(member != 0);
 		i += 1;
 	}
@@ -190,7 +190,7 @@ void test_stringSet(void){
 	i = 0;
 	while(testStrings[i]){
 		printf("MEM: %s\n", testStrings[i]);
-		stringSetIsMember(stringSet, testStrings[i], &member);
+		member = stringSetIsMember(stringSet, testStrings[i]);
 		assert(member != 0);
 		i += 1;
 	}
