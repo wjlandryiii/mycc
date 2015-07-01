@@ -9,7 +9,18 @@ all:	cpp \
 	test_statestack \
 	test_symtab \
 	test_hashtable \
-	test_set
+	test_set \
+	test_list
+
+list.o: list.c list.h
+	gcc -g -c -o $@ $<
+
+test_list.o: list.c list.h
+	gcc -DTESTING -g -c -o $@ $<
+
+test_list: test_list.o
+	gcc -g -o $@ $^
+
 
 set.o: set.c set.h
 	gcc -g -c -o $@ $<
