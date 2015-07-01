@@ -131,12 +131,23 @@
 #include "tokens.h"
 #include "statestack.h"
 #include "hashtable.h"
+#include "list.h"
+#include "set.h"
 
+enum MACRO_TYPES {
+	OBJECT_MACRO,
+	FUNCTION_MACRO,
+};
 
 struct macro_entry {
 	char *name;
 	int type;
 	struct pptoken_list *replacementList;
+};
+
+struct repl_token {
+	struct pptoken token;
+	struct string_set *macroSet;
 };
 
 
@@ -146,6 +157,7 @@ enum SIMPLE_STATES {
 };
 
 int phase4Init(struct phase4 *p4){
+	p4->tokenQueue = newList();
 	p4->stateStack = newStateStack();
 	stateStackPush(p4->stateStack, START_LINE);
 	p4->lookAhead[0] = phase3NextToken(p4->p3);
@@ -232,7 +244,7 @@ static struct pptoken ppDefineLine(struct phase4 *p4){
 			macroEntry = calloc(1, sizeof(struct macro_entry));
 			assert(macroEntry != NULL);
 			macroEntry->name = nameToken.lexeme;
-			macroEntry->type = 1;
+			macroEntry->type = OBJECT_MACRO;
 			macroEntry->replacementList = replacementList;
 			hashTableSetValue(p4->symbolTable, nameToken.lexeme, macroEntry);
 		} else {
@@ -295,6 +307,30 @@ static struct pptoken ppLineUnimplemented(struct phase4 *p4){
 	return token;
 }
 
+static struct list *macroReplacement(struct phase4 *p4,
+		struct macro_entry *macro, struct repl_token *token){
+	struct list *list;
+	struct macro_entry *macroEntry;
+	int found;
+
+	list = newList();
+	assert(list != NULL);
+
+	listEnqueue(list, (void*)token);
+
+	while(1){
+		struct repl_token *t;
+		listDequeuePeek(list, (void **)&t);
+		hashTableGetValue(p4->symbolTable, t->token.lexeme, (void**)&macroEntry, &found);
+		if(!found){
+			return list;
+		} else {
+			
+		}
+	}
+}
+
+
 static struct pptoken ppTextLine(struct phase4 *p4){
 	struct pptoken token;
 	struct macro_entry *macroEntry;
@@ -304,9 +340,18 @@ static struct pptoken ppTextLine(struct phase4 *p4){
 
 	if(token.name == PPTN_IDENTIFIER){
 		hashTableGetValue(p4->symbolTable, token.lexeme, (void**)&macroEntry, &found);
-		fprintf(stderr, "ID: %s\n", token.lexeme);
 		if(found){
-			fprintf(stderr, "FOUND!\n");
+			if(macroEntry->type == OBJECT_MACRO){
+				struct repl_token *t = calloc(1, sizeof(struct repl_token));
+				assert(t != 0);
+				t->token = token;
+				t->macroSet = newStringSet();
+
+			} else {
+				fprintf(stderr, "function macros arn't yet implemented in %s\n",
+						__FUNCTION__);
+				exit(1);
+			}
 		}
 	}
 	return token;

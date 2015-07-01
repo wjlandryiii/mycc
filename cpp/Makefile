@@ -79,7 +79,7 @@ stringbuf.o: stringbuf.c stringbuf.h
 test_stringbuf.o: stringbuf.c stringbuf.h
 	gcc -DTESTING -g -c -o $@ $<
 
-test_phase4.o: phase4.c phase4.h phase3.h tokens.h statestack.h hashtable.h set.h
+test_phase4.o: phase4.c phase4.h phase3.h tokens.h statestack.h hashtable.h set.h list.h
 	gcc -DTESTING -g -c -o $@ $<
 
 
@@ -117,7 +117,7 @@ test_phase3: test_phase3.o phase2.o phase1.o stringbuf.o escstr.o tokens.o
 	gcc -g -o $@ $^
 
 test_phase4: test_phase4.o phase3.o phase2.o phase1.o \
-		stringbuf.o escstr.o tokens.o statestack.o hashtable.o set.o
+		stringbuf.o escstr.o tokens.o statestack.o hashtable.o set.o list.o
 	gcc -g -o $@ $^
 
 test_stringbuf: test_stringbuf.o

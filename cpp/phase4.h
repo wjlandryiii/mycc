@@ -46,12 +46,14 @@ include
 struct phase3;
 struct pptoken;
 struct state_stack;
+struct list;
 
 struct phase4 {
 	struct phase3 *p3;
 	struct state_stack *stateStack;
 	struct pptoken lookAhead[4];
 	struct hash_table *symbolTable;
+	struct list *tokenQueue;
 };
 
 
