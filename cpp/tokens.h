@@ -122,6 +122,7 @@ struct pptoken_list;
 
 struct pptoken_list *newPPTokenList();
 void freePPTokenList(struct pptoken_list *list);
+int ppTokenListCount(struct pptoken_list *list);
 int ppTokenListAtIndex(struct pptoken_list *list, int index, struct pptoken *tokenOut);
 int ppTokenListAppend(struct pptoken_list *list, struct pptoken token);
 

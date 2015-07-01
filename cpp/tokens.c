@@ -190,6 +190,10 @@ void freePPTokenList(struct pptoken_list *list){
 	free(list);
 }
 
+int ppTokenListCount(struct pptoken_list *list){
+	return list->count;
+}
+
 int ppTokenListAtIndex(struct pptoken_list *list, int index, struct pptoken *tokenOut){
 	assert(0 <= index || index < list->count);
 	*tokenOut = list->buf[index];
