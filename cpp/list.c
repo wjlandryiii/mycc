@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "list.h"
 
 struct list {
 	void **buf;
@@ -55,7 +56,9 @@ int listPush(struct list *list, void *item){
 
 int listPop(struct list *list, void **itemOut){
 	if(list->count > 0){
-		*itemOut = list->buf[list->count - 1];
+		if(itemOut){
+			*itemOut = list->buf[list->count - 1];
+		}
 		list->count -= 1;
 		return 0;
 	} else {
@@ -79,6 +82,7 @@ int listEnqueue(struct list *list, void *item){
 		listIncreaseSize(list);
 	}
 	assert(list->count < list->size);
+	/*
 	if(list->count == 0){
 		list->buf[0] = item;
 		list->count += 1;
@@ -89,11 +93,16 @@ int listEnqueue(struct list *list, void *item){
 		list->count += 1;
 		return 0;
 	}
+	*/
+
+	return listPush(list, item);
 }
 
 int listDequeue(struct list *list, void **itemOut){
-/*	if(list->count > 0){
-		*itemOut = list->buf[0];
+	if(list->count > 0){
+		if(itemOut){
+			*itemOut = list->buf[0];
+		}
 		memmove(list->buf, list->buf+1, (list->count - 1) * sizeof(void *));
 		list->count -= 1;
 		return 0;
@@ -101,12 +110,23 @@ int listDequeue(struct list *list, void **itemOut){
 		*itemOut = NULL;
 		return -1;
 	}
-*/
-	return listPop(list, itemOut);
+
+	//return listPop(list, itemOut);
 }
 
 int listDequeuePeek(struct list *list, void **itemOut){
-	return listPopPeek(list, itemOut);
+	return listItemAtIndex(list, 0, itemOut);
+}
+
+int listItemAtIndex(struct list *list, int index, void **itemOut){
+	assert(0 <= index && index < list->count);
+
+	*itemOut = list->buf[index];
+	return 0;
+}
+
+int listItemCount(struct list *list){
+	return list->count;
 }
 
 

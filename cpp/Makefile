@@ -2,15 +2,17 @@ all:	cpp \
 	test_lexer \
 	test_tokens \
 	test_phase1 \
-	test_phase2 \
-	test_phase3 \
-	test_phase4 \
 	test_stringbuf \
 	test_statestack \
 	test_symtab \
 	test_hashtable \
 	test_set \
-	test_list
+	test_list \
+	test_sourcechars \
+	test_phase2 \
+	test_phase3
+#	test_phase4 \
+
 
 list.o: list.c list.h
 	gcc -g -c -o $@ $<
@@ -20,6 +22,48 @@ test_list.o: list.c list.h
 
 test_list: test_list.o
 	gcc -g -o $@ $^
+
+
+sourcechars.o: sourcechars.c sourcechars.h list.h
+	gcc -g -c -o $@ $<
+
+test_sourcechars.o: sourcechars.c sourcechars.h list.h
+	gcc -DTESTING -g -c -o $@ $<
+
+test_sourcechars: test_sourcechars.o list.o
+	gcc -g -o $@ $^
+
+
+
+phase1.o: phase1.c phase1.h sourcechars.h list.h
+	gcc -g -c -o $@ $<
+
+test_phase1.o: phase1.c phase1.h sourcechars.h list.h
+	gcc -DTESTING -g -c -o $@ $<
+
+test_phase1: test_phase1.o sourcechars.o list.o
+	gcc -g -o $@ $^
+
+
+phase2.o: phase2.c phase2.h phase1.h sourcechars.h list.h
+	gcc -g -c -o $@ $<
+
+test_phase2.o: phase2.c phase1.h phase1.h sourcechars.h list.h
+	gcc -DTESTING -g -c -o $@ $<
+
+test_phase2: test_phase2.o phase1.o sourcechars.o list.o
+	gcc -g -o $@ $^
+
+
+phase3.o: phase3.c phase3.h phase2.h phase1.h stringbuf.h
+	gcc -g -c -o $@ $<
+
+test_phase3.o: phase3.c phase3.h phase2.h phase1.h stringbuf.h escstr.h tokens.h
+	gcc -DTESTING -g -c -o $@ $<
+
+test_phase3: test_phase3.o phase2.o phase1.o stringbuf.o escstr.o tokens.o list.o sourcechars.o
+	gcc -g -o $@ $^
+
 
 
 set.o: set.c set.h
@@ -55,23 +99,8 @@ tokens.o: tokens.c tokens.h escstr.h
 test_tokens.o: tokens.c tokens.h escstr.h
 	gcc -DTESTING -g -c -o $@ $<
 
-phase1.o: phase1.c phase1.h
-	gcc -g -c -o $@ $<
 
-test_phase1.o: phase1.c phase1.h
-	gcc -DTESTING -g -c -o $@ $<
 
-phase2.o: phase2.c phase2.h phase1.h
-	gcc -g -c -o $@ $<
-
-test_phase2.o: phase2.c phase1.h phase1.h
-	gcc -DTESTING -g -c -o $@ $<
-
-phase3.o: phase3.c phase3.h phase2.h phase1.h stringbuf.h
-	gcc -g -c -o $@ $<
-
-test_phase3.o: phase3.c phase3.h phase2.h phase1.h stringbuf.h escstr.h tokens.h
-	gcc -DTESTING -g -c -o $@ $<
 
 stringbuf.o: stringbuf.c stringbuf.h
 	gcc -g -c -o $@ $<
@@ -107,14 +136,8 @@ test_lexer: test_lexer.o escstr.o
 test_tokens: test_tokens.o escstr.o
 	gcc -DTESTING -g -o $@ $^
 
-test_phase1: test_phase1.o
-	gcc -g -o $@ $^
 
-test_phase2: test_phase2.o phase1.o
-	gcc -g -o $@ $^
 
-test_phase3: test_phase3.o phase2.o phase1.o stringbuf.o escstr.o tokens.o
-	gcc -g -o $@ $^
 
 test_phase4: test_phase4.o phase3.o phase2.o phase1.o \
 		stringbuf.o escstr.o tokens.o statestack.o hashtable.o set.o list.o

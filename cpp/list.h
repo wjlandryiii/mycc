@@ -15,5 +15,7 @@ int listPopPeek(struct list *list, void **itemOut);
 int listEnqueue(struct list *list, void *item);
 int listDequeue(struct list *list, void **itemOut);
 int listDequeuePeek(struct list *list, void **itemOut);
+int listItemAtIndex(struct list *list, int index, void **itemOut);
+int listItemCount(struct list *list);
 
 #endif

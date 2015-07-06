@@ -427,6 +427,26 @@ struct pptoken phase4NextToken(struct phase4 *p4){
 #include "phase1.h"
 #include "phase2.h"
 
+
+struct pptoken defineTokens[] = {
+	{"", "#", LT_PUNCTUATOR, PPTN_HASH},
+	{"", "define", LT_IDENTIFIER, PPTN_DEFINE},
+	{" ", "TABLESIZE", LT_IDENTIFIER, PPTN_IDENTIFIER},
+	{" ", "32", LT_PPNUMBER, PPTN_PPNUMBER},
+	{"","\n", LT_NEWLINE, PPTN_NEWLINE},
+	{"","int", LT_IDENTIFIER, PPTN_IDENTIFIER},
+	{" ", "table", LT_IDENTIFIER, PPTN_IDENTIFIER},
+	{"", "[", LT_PUNCTUATOR, PPTN_LBRACKET},
+	{"", "TABLESIZE", LT_IDENTIFIER, PPTN_IDENTIFIER},
+	{"", "]", LT_PUNCTUATOR, PPTN_RBRACKET},
+	{"", "\n", LT_NEWLINE, PPTN_NEWLINE},
+	{"", "", LT_EMPTY, PPTN_EOF},
+};
+
+int test_define(){
+	return 0;
+}
+
 int main(int argc, char *argv[]){
 	struct phase1 p1;
 	struct phase2 p2;
