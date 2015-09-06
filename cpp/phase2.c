@@ -2,6 +2,15 @@
  * Copyright 2015 Joseph Landry All Rights Reserved
  */
 
+/* PHASE 2: (from ISO/IEC 9899:TC3 Draft 2007-09-07)
+ *     Each instance of a backslash character (\) immediately followed by
+ * a new-line character is deleted, splicing physical source lines to form
+ * logical source lines. Only the last backslash on any physical source line
+ * shall be eligible for being part of such a splice. A source file that is
+ * not empty shall end in a new-line character, which shall not be immediately
+ * preceded by a backslash character before any such splicing takes place.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

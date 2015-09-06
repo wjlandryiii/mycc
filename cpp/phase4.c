@@ -3,7 +3,7 @@
  */
 
 /*
- * From ISO 9899 Draft 2007:
+ * PHASE 4: (from ISO/IEC 9899:TC3 Draft 2007-09-07)
  * Preprocessing directives are executed, macro invocations are expanded, and
  * *Pragma_* unary operators are executed. ...  A #include preprocessing
  *  directive causes the named header or source file to be processed from phase 1

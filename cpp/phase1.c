@@ -2,6 +2,15 @@
  * Copyright 2015 Joseph Landry All Rights Reserved
  */
 
+/* PHASE 1: (From ISO/IEC 9899:TC3 Draft 2007-09-07)
+ *     Physical source file multibyte characters are mapped, in an
+ * implementation-defined manner, to the source character set (introducing
+ * new-line characters for end-of-line indicators) if necessary. Trigraph
+ * sequences are replaced by corresponding single-character internal
+ * representations.
+ */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
