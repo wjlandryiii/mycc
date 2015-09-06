@@ -10,8 +10,8 @@ all:	cpp \
 	test_list \
 	test_sourcechars \
 	test_phase2 \
-	test_phase3
-#	test_phase4 \
+	test_phase3 \
+	test_phase4 \
 
 
 list.o: list.c list.h
@@ -65,6 +65,15 @@ test_phase3: test_phase3.o phase2.o phase1.o stringbuf.o escstr.o tokens.o list.
 	gcc -g -o $@ $^
 
 
+test_phase4.o: phase4.c phase4.h phase3.h tokens.h statestack.h hashtable.h set.h list.h
+	gcc -DTESTING -g -c -o $@ $<
+
+test_phase4: test_phase4.o phase3.o phase2.o phase1.o \
+		stringbuf.o escstr.o tokens.o statestack.o \
+		hashtable.o set.o list.o sourcechars.o
+	gcc -g -o $@ $^
+
+
 
 set.o: set.c set.h
 	gcc -g -c -o $@ $<
@@ -108,8 +117,6 @@ stringbuf.o: stringbuf.c stringbuf.h
 test_stringbuf.o: stringbuf.c stringbuf.h
 	gcc -DTESTING -g -c -o $@ $<
 
-test_phase4.o: phase4.c phase4.h phase3.h tokens.h statestack.h hashtable.h set.h list.h
-	gcc -DTESTING -g -c -o $@ $<
 
 
 escstr.o: escstr.c escstr.h
@@ -139,9 +146,6 @@ test_tokens: test_tokens.o escstr.o
 
 
 
-test_phase4: test_phase4.o phase3.o phase2.o phase1.o \
-		stringbuf.o escstr.o tokens.o statestack.o hashtable.o set.o list.o
-	gcc -g -o $@ $^
 
 test_stringbuf: test_stringbuf.o
 	gcc -g -o $@ $^

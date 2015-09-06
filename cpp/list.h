@@ -17,5 +17,7 @@ int listDequeue(struct list *list, void **itemOut);
 int listDequeuePeek(struct list *list, void **itemOut);
 int listItemAtIndex(struct list *list, int index, void **itemOut);
 int listItemCount(struct list *list);
+int listUnshift(struct list *list, void *item);
+int listUnshiftList(struct list *dst, struct list *src);
 
 #endif

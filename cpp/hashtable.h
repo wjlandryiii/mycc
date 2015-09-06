@@ -8,9 +8,22 @@
 struct hash_table;
 
 struct hash_table *newHashTable();
-void freeHashTable(struct hash_table *hashTable);
-int hashTableSetValue(struct hash_table *hashTable, char *key, void *value);
-int hashTableGetValue(struct hash_table *hashTable, char *key, void **value, int *found);
-int hashTableRemove(struct hash_table *hashTable, char *key, void **value, int *found);
+
+void freeHashTable(
+		struct hash_table *hashTable);
+int hashTableSetValue(
+		struct hash_table *hashTable,
+		char *key,
+		void *value);
+int hashTableGetValue(
+		struct hash_table *hashTable,
+		char *key,
+		void **value,
+		int *found);
+int hashTableRemove(
+		struct hash_table *hashTable,
+		char *key,
+		void **value,
+		int *found);
 
 #endif

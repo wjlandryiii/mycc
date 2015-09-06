@@ -8,6 +8,7 @@
 struct string_set;
 
 struct string_set *newStringSet(void);
+struct string_set *newStringSetFromStringSet(struct string_set *srcSet);
 void freeStringSet(struct string_set *stringSet);
 int stringSetInsertString(struct string_set *set, char *s);
 int stringSetIsMember(struct string_set *set, char *s);

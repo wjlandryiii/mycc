@@ -488,6 +488,8 @@ struct list *phase3(struct list *input){
 	int i;
 	int hotForDirective;
 	int hotForInclude;
+	int hasNewLine;
+	int firstLine;
 
 	output = newList();
 	assert(output != NULL);
@@ -499,13 +501,20 @@ struct list *phase3(struct list *input){
 
 	hotForDirective = 0;
 	hotForInclude = 0;
+	firstLine = 1;
 	while(listItemCount(input) > 0){
-		consumeWhiteSpaceAndComments(input, &token.whiteSpace, &token.hasNewLine);
+		consumeWhiteSpaceAndComments(input, &token.whiteSpace, &hasNewLine);
 		consumeLexeme(input, hotForInclude, &token.lexeme, &token.name);
 
+		if(firstLine || hasNewLine){
+			token.startsLine = 1;
+			firstLine = 0;
+		} else {
+			token.startsLine = 0;
+		}
 		hotForInclude = 0;
 		if(hotForDirective){
-			if(token.name == PPTN_IDENTIFIER && !token.hasNewLine){
+			if(token.name == PPTN_IDENTIFIER && !token.startsLine){
 				for(i = 0; directives[i].lexeme; i++){
 					if(strcmp(token.lexeme, directives[i].lexeme) == 0){
 						token.name = directives[i].name;
@@ -515,14 +524,19 @@ struct list *phase3(struct list *input){
 				if(token.name == PPTN_INCLUDE){
 					hotForInclude = 1;
 				}
+				if(token.name != PPTN_IDENTIFIER){
+					token.isDirective = 1;
+				}
 			}
 			hotForDirective = 0;
+		} else {
+			token.isDirective = 0;
 		}
 
-		if(token.name == PPTN_HASH && token.hasNewLine){
+		if(token.name == PPTN_HASH && token.startsLine){
 			hotForDirective = 1;
 		}
-
+		token.replacements = 0;
 		ptoken = calloc(1, sizeof(*ptoken));
 		memcpy(ptoken, &token, sizeof(*ptoken));
 		listEnqueue(output, ptoken);
@@ -555,7 +569,7 @@ void test_phase3(void){
 		fputs(token->whiteSpace, stdout);
 		if(token->name != PPTN_EOF){
 			putchar('{');
-			printf("\033[35m");
+			printf("\033[3%cm", token->startsLine == 1 ? '6' : '5');
 			fputs(token->lexeme, stdout);
 			printf("\033[39m");
 			putchar('}');

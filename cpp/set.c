@@ -31,7 +31,20 @@ struct string_set *newStringSet(void){
 	stringSet->size = STRINGSET_DEFAULT_SIZE;
 	stringSet->entries = calloc(stringSet->size, sizeof(struct string_set_entry));
 	assert(stringSet->entries != NULL);
+	assert(stringSet->size > 0);
 	return stringSet;
+}
+
+struct string_set *newStringSetFromStringSet(struct string_set *srcSet){
+	struct string_set *set;
+
+	set = calloc(1, sizeof(*set));
+	set->count = srcSet->count;
+	set->size = srcSet->size;
+	set->entries = calloc(set->size, sizeof(struct string_set_entry));
+	memcpy(set->entries, srcSet->entries, srcSet->size * sizeof(struct string_set_entry));
+	assert(set->size > 0);
+	return set;
 }
 
 void freeStringSet(struct string_set *stringSet){
@@ -107,6 +120,7 @@ static int stringSetIncreaseSize(struct string_set *set){
 	}
 	set->entries = newEntries;
 	set->size = newSize;
+	assert(set->size > 0);
 	return 0;
 }
 
@@ -131,6 +145,7 @@ int stringSetInsertString(struct string_set *set, char *s){
 		foundEntry->string = s;
 		set->count += 1;
 	}
+	assert(set->size > 0);
 	return 0;
 }
 
@@ -138,18 +153,12 @@ int stringSetIsMember(struct string_set *set, char *s){
 	int hash;
 	int n;
 
-	/*
-	if(set->size / 2 < set->count){
-		stringSetIncreaseSize(set);
-	}
-	assert(set->count < set->size);
-	*/
-
 	hash = stringSetHashFn(s);
 
 	struct string_set_entry *foundEntry;
 	int present;
 
+	assert(set->size > 0);
 	linearProbe(set->entries, set->size, hash, s, &foundEntry, &present);
 	return present;
 }

@@ -129,7 +129,26 @@ int listItemCount(struct list *list){
 	return list->count;
 }
 
+int listUnshift(struct list *list, void *item){
+	if(list->count >= list->size){
+		listIncreaseSize(list);
+	}
+	assert(list->count < list->size);
+	memmove(list->buf + 1, list->buf, list->count * sizeof(void *));
+	list->buf[0] = item;
+	return 0;
+}
 
+int listUnshiftList(struct list *dst, struct list *src){
+	while(dst->size <= dst->count + src->count){
+		listIncreaseSize(dst);
+	}
+	assert(dst->count + src->count < dst->size);
+	memmove(dst->buf + src->count, dst->buf, dst->count * sizeof(void*));
+	memcpy(dst->buf, src->buf, src->count * sizeof(void*));
+	dst->count += src->count;
+	return 0;
+}
 
 #ifdef TESTING
 

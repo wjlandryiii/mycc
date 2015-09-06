@@ -5,12 +5,16 @@
 #ifndef TOKENS_H
 #define TOKENS_H
 
+struct set;
+
 struct pptoken {
 	char *whiteSpace;
-	int hasNewLine;
+	int startsLine;
+	int isDirective;
 	char *lexeme;
 	int type;
 	int name;
+	struct string_set *replacements;
 };
 
 enum PPTOKEN_NAMES {
