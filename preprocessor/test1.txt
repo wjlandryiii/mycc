@@ -1,0 +1,14 @@
+#define FOO 5
+FOO
+FOO
+FOO
+.
+
+
+[file:"test1.txt", line:1, column: 1, ws:"", lexeme:"#"]
+[file:"test1.txt", line:1, column: 2, ws:"", lexeme:"define"]
+[file:"test1.txt", line:1, column: 9, ws:" ", lexeme:"FOO"]
+[file:"test1.txt", line:1, column:13, ws:" ", lexeme:"5"]
+[file:"test1.txt", line:2, column: 1, ws:"", lexeme:"FOO"]
+[file:"test1.txt", line:3, column: 1, ws:"", lexeme:"FOO"]
+[file:"test1.txt", line:4, column: 1, ws:"", lexeme:"FOO"]

@@ -132,5 +132,4 @@ int ppTokenListCount(struct pptoken_list *list);
 int ppTokenListAtIndex(struct pptoken_list *list, int index, struct pptoken *tokenOut);
 int ppTokenListAppend(struct pptoken_list *list, struct pptoken token);
 
-
 #endif
